@@ -1,0 +1,50 @@
+{
+  "announcement": {
+    "on": false,
+    "text": "Efendija je na odsustvu do 12.10.2026. godine pa će namazi biti obavljani po potrebi i u skladu sa resursima."
+  },
+  "asrFactor": 1,
+  "city": "Mostar",
+  "cityIndex": 61,
+  "fajrAngle": 18,
+  "hijriAdjust": 0,
+  "ishaAngle": 17,
+  "lat": 43.3438,
+  "lng": 17.8078,
+  "masjidName": "Džemat Livač",
+  "night": {
+    "afterIsha": 30,
+    "beforeFajr": 30,
+    "level": 70,
+    "on": false
+  },
+  "noteSeconds": 10,
+  "notes": [
+    {
+      "days": [],
+      "from": "2026-10-06",
+      "id": "muwlrzmb",
+      "text": "Sergija za povratničke džemate će biti prikupljana nakon džume namaza u petak - 09.10.2026.",
+      "to": "2026-10-09"
+    },
+    {
+      "days": [],
+      "from": "",
+      "id": "muwm0m4c",
+      "text": "Mektebska nastava se odgađa u nedjelju zbog planiranih radova sanacije vodovoda unutar prostorija džamije.",
+      "to": ""
+    }
+  ],
+  "offsets": {
+    "asr": 0,
+    "dhuhr": 0,
+    "fajr": 0,
+    "isha": 0,
+    "maghrib": 0,
+    "sunrise": 0
+  },
+  "orientation": "auto",
+  "overrides": {},
+  "showSeconds": true,
+  "source": "official"
+}
