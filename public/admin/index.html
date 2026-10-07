@@ -79,6 +79,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .seg[disabled]{cursor:not-allowed;opacity:.6}
 .a-bar-row2{max-width:980px;margin:0 auto;padding:0 20px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .save-state{font-size:14px;color:var(--ink-2);min-width:0}
+.a-actions{display:flex;align-items:center;gap:12px}
 .save-state.err{color:var(--warn)}
 .a-main{max-width:980px;margin:0 auto;padding:24px 20px 80px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .a-sec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
@@ -103,11 +104,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 input[type=range]{flex:1;accent-color:var(--accent)}
 .check{display:flex;align-items:center;gap:10px;font-size:15px;margin-bottom:12px}
 .check input{width:20px;height:20px;accent-color:var(--accent)}
-.notes{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
+.notes{list-style:none;margin:0 0 12px;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
 .notes li{display:block}
 .notes textarea{flex:1;min-height:44px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);resize:vertical}
 .notes .ctl{display:flex;gap:4px}
-.note-item{display:grid;gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px}
+.note-item{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px}
 .note-row{display:flex;gap:8px;align-items:flex-start}
 .note-sched{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:14px;color:var(--ink-2)}
 .note-sched input[type=date]{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
@@ -135,7 +136,26 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 .cprev .r.cur{background:var(--c-surface-2);box-shadow:inset 3px 0 0 #49B9AE}
 .cprev .r.next{background:var(--c-accent);color:var(--c-on-accent)}
 .empty{color:var(--ink-2);font-size:15px;margin:0 0 12px}
-@media (max-width:760px){.a-main{grid-template-columns:1fr}.row2{grid-template-columns:1fr}.colors{grid-template-columns:1fr}}
+@media (max-width:760px){.a-main{grid-template-columns:minmax(0,1fr)}.row2{grid-template-columns:1fr}.colors{grid-template-columns:1fr}}
+/* phones: compact top bar. Title and save status share a row, the three buttons split the next
+   row (shorter labels below 480px), and the layout switch spans the full width below its caption.
+   Note text boxes take the full width, with their buttons underneath. */
+@media (max-width:760px){
+  .a-bar-in{padding:10px 16px;gap:8px}
+  .a-bar h1{flex:0 0 auto;font-size:17px;white-space:nowrap}
+  .save-state{flex:1 1 0;font-size:13px;text-align:right}
+  .a-actions{flex:1 1 100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .a-actions .btn{padding:8px 6px;font-size:14px;white-space:nowrap}
+  .a-bar-row2{padding:0 16px 10px}
+  .orient{flex:1 1 100%;flex-direction:column;align-items:stretch;gap:4px;font-size:12px}
+  .seg-group{display:flex}
+  .seg{flex:1 1 0;min-width:0;padding:8px 2px;font-size:13px;white-space:nowrap}
+  .note-row{flex-wrap:wrap}
+  .notes textarea{flex:1 1 100%;min-width:0}
+  .note-row .ctl{margin-left:auto}
+}
+@media (max-width:480px){.m-hide{display:none}}
+@media (max-width:340px){.seg{font-size:12px}}
 @media (prefers-reduced-motion:reduce){.n-text,.d-corner,.dots span,.d-night{transition:none}}
 </style>
 </head>
@@ -159,9 +179,11 @@ input[type=range]{flex:1;accent-color:var(--accent)}
   <div class="a-bar"><div class="a-bar-in">
     <h1>Vaktija · postavke</h1>
     <span class="save-state" id="saveState" aria-live="polite"></span>
-    <button class="btn" id="btnLogout" type="button">Odjavi se</button>
-    <button class="btn" id="btnPreview" type="button">Pogledaj prikaz</button>
-    <button class="btn primary" id="btnSave" type="button" disabled>Sačuvaj promjene</button>
+    <div class="a-actions">
+      <button class="btn" id="btnLogout" type="button">Odjavi se</button>
+      <button class="btn" id="btnPreview" type="button">Pogledaj<span class="m-hide"> prikaz</span></button>
+      <button class="btn primary" id="btnSave" type="button" disabled>Sačuvaj<span class="m-hide"> promjene</span></button>
+    </div>
   </div>
   <div class="a-bar-row2">
     <div class="orient"><span id="orientLabel">Raspored ekrana</span><div class="seg-group" id="orientSwitch" role="group" aria-labelledby="orientLabel"></div></div>
