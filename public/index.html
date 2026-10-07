@@ -130,7 +130,8 @@ body{background:#0F1C33}
 .notes-bar .dots{display:flex;gap:8px;grid-column:3;grid-row:1}
 .dots span{width:8px;height:6px;border-radius:3px;background:rgba(244,239,228,.45);transition:width .4s ease,background .4s ease}
 .dots span.on{width:22px;background:#F4EFE4}
-.n-text{grid-column:2;grid-row:1;font-size:32px;font-weight:600;line-height:1.25;color:#F4EFE4;padding:10px 0;box-sizing:border-box;transition:opacity .6s ease;overflow-wrap:anywhere}
+.n-text{grid-column:2;grid-row:1;font-size:32px;font-weight:600;line-height:1.25;color:#F4EFE4;padding:10px 0;box-sizing:border-box;transition:opacity .6s ease;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .n-text.out{opacity:0}
 .stage.p .notes-bar{display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:22px 30px 24px;background:rgba(255,255,255,.35)}
 .stage.p .notes-bar .n-top{display:flex;align-items:center;justify-content:space-between}
@@ -359,27 +360,17 @@ function drawDots(count, idx){
   box.hidden = count < 2;
   for (let i = 0; i < count; i++){ const s = document.createElement("span"); if (i === idx) s.className = "on"; box.append(s); }
 }
-// Long notes are shown in full: the text shrinks (to 65% at most) only when the board would
-// otherwise run out of room. Size and height are set for the longest note, so the layout
-// stays still while the notes rotate.
+// Notes are at most 3 lines (admin keeps them within that). The bar is sized for the tallest
+// active note, so the layout stays still while the notes rotate.
 let shownNotes = [];
-function boardFits(){
-  const inner = document.querySelector("#stage .inner"), center = document.querySelector("#stage .center");
-  return inner.scrollHeight <= inner.clientHeight + 1 && center.scrollHeight <= center.clientHeight + 1;
-}
 function fitNotes(){
   const text = $("dTickerText");
   if (!shownNotes.length || $("dTicker").hidden) return;
   const showing = text.textContent;
-  text.style.fontSize = ""; text.style.minHeight = "";
-  const full = parseFloat(getComputedStyle(text).fontSize), min = Math.round(full * .65);
-  for (let size = full; ; size = Math.max(min, size - 2)){
-    text.style.fontSize = size + "px";
-    let tallest = shownNotes[0], tallestH = 0;
-    for (const n of shownNotes){ text.textContent = n; if (text.offsetHeight > tallestH){ tallestH = text.offsetHeight; tallest = n; } }
-    text.textContent = tallest;
-    if (boardFits() || size === min){ text.style.minHeight = tallestH + "px"; break; }
-  }
+  text.style.minHeight = "";
+  let tallest = 0;
+  for (const n of shownNotes){ text.textContent = n; tallest = Math.max(tallest, text.offsetHeight); }
+  text.style.minHeight = tallest + "px";
   text.textContent = showing;
 }
 function restartNotes(){
