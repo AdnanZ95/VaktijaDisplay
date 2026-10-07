@@ -90,9 +90,15 @@ button,input,select,textarea{font:inherit;color:inherit}
   .a-conflict-btns .btn{padding:8px 6px;font-size:14px}
 }
 .save-state.err{color:var(--warn)}
-.a-main{max-width:980px;margin:0 auto;padding:24px 20px 80px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+/* settings: section menu on the left, the chosen section on the right */
+.a-layout{max-width:980px;margin:0 auto;padding:24px 20px 80px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;align-items:start}
+.a-nav{position:sticky;top:calc(var(--bar-h,120px) + 16px);display:grid;gap:2px}
+.a-nav button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;border:0;border-radius:10px;background:transparent;color:var(--ink-2);font-size:15px;font-weight:500;text-align:left;cursor:pointer}
+.a-nav button:hover{background:var(--surface);color:var(--ink)}
+.a-nav button[aria-current="true"]{background:var(--line);color:var(--ink);font-weight:700}
+.a-nav .dot-unsaved{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.a-main{min-width:0}
 .a-sec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
-.a-sec.wide{grid-column:1/-1}
 .a-sec h2{font-size:18px;margin:0 0 4px}
 .a-sec .hint{font-size:14px;color:var(--ink-2);margin:0 0 16px;line-height:1.45}
 .field{display:grid;gap:6px;margin-bottom:14px}
@@ -145,7 +151,7 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 .cprev .r.cur{background:var(--c-surface-2);box-shadow:inset 3px 0 0 #49B9AE}
 .cprev .r.next{background:var(--c-accent);color:var(--c-on-accent)}
 .empty{color:var(--ink-2);font-size:15px;margin:0 0 12px}
-@media (max-width:760px){.a-main{grid-template-columns:minmax(0,1fr)}.row2{grid-template-columns:1fr}.colors{grid-template-columns:1fr}}
+@media (max-width:760px){.row2{grid-template-columns:1fr}.colors{grid-template-columns:1fr}}
 /* phones: compact top bar. Title and save status share a row, the three buttons split the next
    row (shorter labels below 480px), and the layout switch spans the full width below its caption.
    Note text boxes take the full width, with their buttons underneath. */
@@ -156,6 +162,10 @@ input[type=range]{flex:1;accent-color:var(--accent)}
   .a-actions{flex:1 1 100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   .a-actions .btn{padding:8px 6px;font-size:14px;white-space:nowrap}
   .a-bar-row2{padding:0 16px 10px}
+  .a-layout{grid-template-columns:minmax(0,1fr);gap:12px;padding:12px 16px 80px}
+  .a-nav{position:static;display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+  .a-nav button{width:auto;flex:0 0 auto;padding:8px 12px;font-size:14px;white-space:nowrap;border:1px solid var(--line)}
+  .a-nav button[aria-current="true"]{border-color:var(--accent)}
   .orient{flex:1 1 100%;flex-direction:column;align-items:stretch;gap:4px;font-size:12px}
   .seg-group{display:flex}
   .seg{flex:1 1 0;min-width:0;padding:8px 2px;font-size:13px;white-space:nowrap}
@@ -204,7 +214,10 @@ input[type=range]{flex:1;accent-color:var(--accent)}
       <button class="btn primary" id="btnMine" type="button">Sačuvaj moje svejedno</button>
     </div>
   </div></div>
-  <main class="a-main" id="aMain"></main>
+  <div class="a-layout">
+    <nav class="a-nav" id="aNav" aria-label="Dijelovi postavki"></nav>
+    <main class="a-main" id="aMain"></main>
+  </div>
 </section>
 
 <script src="/shared.js"></script>
@@ -281,6 +294,7 @@ function setDirty(v){
   dirty = v;
   $("btnSave").disabled = !v;
   if (v) setSaveState("Nesačuvane promjene");
+  updateNavDots();
 }
 function setSaveState(t, err){ const s = $("saveState"); s.textContent = t; s.classList.toggle("err", !!err); }
 function el(tag, attrs, ...kids){
@@ -370,7 +384,7 @@ function renderAdmin(){
   const main = $("aMain"); main.textContent = "";
 
   // Masjid
-  main.append(el("section",{class:"a-sec"},
+  main.append(el("section",{class:"a-sec","data-sec":"dzamija"},
     el("h2",{text:"Džamija"}),
     el("p",{class:"hint",text:"Naziv i mjesto prikazani u zaglavlju ekrana."}),
     field("Naziv džamije", textInput("masjidName")),
@@ -401,7 +415,7 @@ function renderAdmin(){
   const cityField = field("Grad", citySel);
   const syncCalc = () => { calcBox.hidden = srcSel.value !== "calc"; cityField.hidden = srcSel.value === "calc"; };
   srcSel.addEventListener("change", () => { draft.source = srcSel.value; syncCalc(); setDirty(true); refreshTable(); });
-  main.append(el("section",{class:"a-sec"},
+  main.append(el("section",{class:"a-sec","data-sec":"izvor"},
     el("h2",{text:"Izvor vremena"}),
     el("p",{class:"hint",text:`Zvanična vaktija koristi takvim sa vaktija.ba za ${OFFICIAL.cities.length} lokacija u BiH i Sandžaku, za svaku godinu, uz automatsko ljetno i zimsko računanje vremena.`}),
     field("Vremena namaza", srcSel),
@@ -436,7 +450,7 @@ function renderAdmin(){
   }
   // drop stale overrides from past days
   for (const k of Object.keys(draft.overrides)) if (k < todayKey) delete draft.overrides[k];
-  main.append(el("section",{class:"a-sec wide"},
+  main.append(el("section",{class:"a-sec","data-sec":"vremena"},
     el("h2",{text:"Današnja vremena"}),
     el("p",{class:"hint",text:"Osnova je zvanična vaktija ili izračun. Pomak (min) vrijedi svaki dan. Ručno vrijeme vrijedi samo danas i ima prednost nad izračunom."}),
     el("div",{class:"ptable-wrap"}, el("table",{class:"ptable"},
@@ -490,7 +504,7 @@ function renderAdmin(){
     });
   };
   drawNotes();
-  main.append(el("section",{class:"a-sec wide"},
+  main.append(el("section",{class:"a-sec","data-sec":"obavijesti"},
     el("h2",{text:"Obavijesti"}),
     el("p",{class:"hint",text:"Kratke poruke koje se smjenjuju na dnu ekrana, najviše 3 reda svaka. Datumi i dani su neobavezni: bez njih se obavijest prikazuje svaki dan. Ako odaberete dane, prikazuje se samo tim danima, npr. samo četvrtkom za ders."}),
     list,
@@ -504,7 +518,7 @@ function renderAdmin(){
   const lvl = el("input",{type:"range",min:"20",max:"90",step:"5"}); lvl.value = String(draft.night.level ?? 70);
   const lvlOut = el("span",{text:`${lvl.value}%`});
   lvl.addEventListener("input", () => { draft.night.level = +lvl.value; lvlOut.textContent = `${lvl.value}%`; setDirty(true); });
-  main.append(el("section",{class:"a-sec"},
+  main.append(el("section",{class:"a-sec","data-sec":"nocni"},
     el("h2",{text:"Noćni način"}),
     el("p",{class:"hint",text:"Između jacije i zore ekran se zatamni, a vrijeme i dalje ostaje čitljivo."}),
     el("label",{class:"check"}, nOn, "Zatamni ekran noću"),
@@ -522,7 +536,7 @@ function renderAdmin(){
   annText.addEventListener("input", () => { draft.announcement.text = annText.value; setDirty(true); });
   const secOn = el("input",{type:"checkbox"}); secOn.checked = !!draft.showSeconds;
   secOn.addEventListener("change", () => { draft.showSeconds = secOn.checked; setDirty(true); });
-  main.append(el("section",{class:"a-sec"},
+  main.append(el("section",{class:"a-sec","data-sec":"najava"},
     el("h2",{text:"Najava preko cijelog ekrana"}),
     el("p",{class:"hint",text:"Prekriva cijeli prikaz dok je uključena, npr. za promjenu termina ili važnu vijest. Isključite je kad više nije potrebna."}),
     field("Tekst najave", annText),
@@ -569,7 +583,7 @@ function renderAdmin(){
     setDirty(true); showColors(typing);
   };
   showColors();
-  main.append(el("section",{class:"a-sec wide"},
+  main.append(el("section",{class:"a-sec","data-sec":"boje"},
     el("h2",{text:"Boje"}),
     el("p",{class:"hint",text:"Glavna boja je pozadina ekrana, a sporedna naglašava sljedeći namaz, okvir i odbrojavanje. Nijanse kartica se računaju same iz glavne boje. Ekran se mijenja kad sačuvate."}),
     el("div",{class:"colors"},
@@ -581,9 +595,67 @@ function renderAdmin(){
       preview)
   ));
 
+  buildNav();
   $("btnSave").disabled = !dirty;
   if (!dirty) setSaveState("Sve je sačuvano");
 }
+
+/* section menu: one section shown at a time; the choice is kept in the address (#boje) */
+const SECTIONS = [
+  ["dzamija", "Džamija", ["masjidName","city","lat","lng"]],
+  ["izvor", "Izvor vremena", ["source","cityIndex","asrFactor","hijriAdjust","fajrAngle","ishaAngle"]],
+  ["vremena", "Današnja vremena", ["offsets","overrides"]],
+  ["obavijesti", "Obavijesti", ["notes","noteSeconds"]],
+  ["nocni", "Noćni način", ["night"]],
+  ["najava", "Najava i prikaz", ["announcement","showSeconds"]],
+  ["boje", "Boje", ["colors"]]
+];
+const sectionFromHash = () => { const h = location.hash.slice(1); return SECTIONS.some(s => s[0] === h) ? h : null; };
+let activeSection = sectionFromHash() || SECTIONS[0][0];
+function buildNav(){
+  const nav = $("aNav"); nav.textContent = "";
+  for (const [id, label] of SECTIONS){
+    nav.append(el("button",{type:"button","data-sec":id,onclick:()=>{ showSection(id, true); history.replaceState(null, "", "#" + id); }},
+      el("span",{text:label})));
+  }
+  showSection(activeSection);
+  updateNavDots();
+}
+// picked: chosen from the menu (not a rebuild), so bring the new section and its tab into view
+function showSection(id, picked){
+  activeSection = id;
+  for (const s of document.querySelectorAll("#aMain [data-sec]")) s.hidden = s.dataset.sec !== id;
+  for (const b of $("aNav").children) b.setAttribute("aria-current", String(b.dataset.sec === id));
+  if (!picked) return;
+  // back up to the start of the settings if scrolled past them (just below the sticky top bar)
+  const top = document.querySelector(".a-layout").getBoundingClientRect().top - document.querySelector(".a-bar").offsetHeight;
+  if (top < 0) window.scrollBy(0, top);
+  // phone tab strip: center the chosen tab
+  const nav = $("aNav"), b = nav.querySelector(`[data-sec="${id}"]`);
+  if (nav.scrollWidth > nav.clientWidth){
+    const nr = nav.getBoundingClientRect(), br = b.getBoundingClientRect();
+    nav.scrollLeft += (br.left - nr.left) - (nav.clientWidth - br.width) / 2;
+  }
+}
+// a dot on sections whose settings differ from the saved ones
+function sectionChanged(keys){
+  const today = dateKey(new Date());
+  const pick = (o, k) => k === "overrides" ? Object.fromEntries(Object.entries(o[k] || {}).filter(([d]) => d >= today)) : o[k];
+  return keys.some(k => JSON.stringify(pick(draft, k)) !== JSON.stringify(pick(config, k)));
+}
+function updateNavDots(){
+  if (!draft) return;
+  for (const b of $("aNav").children){
+    const keys = SECTIONS.find(s => s[0] === b.dataset.sec)[2], changed = dirty && sectionChanged(keys);
+    let dot = b.querySelector(".dot-unsaved");
+    if (changed && !dot) b.append(el("span",{class:"dot-unsaved",title:"Nesačuvane promjene","aria-label":"nesačuvane promjene"}));
+    else if (!changed && dot) dot.remove();
+  }
+}
+window.addEventListener("hashchange", () => { const id = sectionFromHash(); if (id) showSection(id); });
+// keeps the menu just below the sticky top bar, whose height changes (phones, conflict notice)
+if (window.ResizeObserver) new ResizeObserver(([e]) => document.documentElement.style.setProperty("--bar-h", e.target.offsetHeight + "px")).observe(document.querySelector(".a-bar"));
+
 const ORIENTS = [["auto","Automatski","Prati oblik ekrana"],["landscape","Horizontalno","Uvijek horizontalni raspored"],["portrait","Vertikalno","Uvijek vertikalni raspored"],["rotate","Zarotirano","Vertikalno, slika okrenuta za 90° za TV koji ne može sam rotirati prikaz"]];
 let orientBusy = false;
 function renderOrientSwitch(){
