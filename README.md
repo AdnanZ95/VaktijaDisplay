@@ -91,6 +91,7 @@ You can skip this and enter everything in admin instead.
 
 - Open `/admin/` on your laptop or phone, enter the PIN, make changes, and press **Sačuvaj promjene**. The layout switch at the top saves immediately.
 - Tick **Zapamti ovaj uređaj** on your own laptop so you aren't asked for the PIN every time.
+- Under **Boje**, pick the main color (background) and the secondary color (accent), or click one of the ready-made pairs. The card shades follow the main color automatically, a warning appears if a pair would be hard to read, and **Vrati zadane boje** returns to the original navy and gold. Saved with **Sačuvaj promjene** like everything else.
 - **Odjavi se** logs that device out.
 
 ## Changing the PIN
