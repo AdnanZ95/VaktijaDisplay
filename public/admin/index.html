@@ -69,6 +69,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:500}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
 .btn.primary[disabled]{opacity:.45;cursor:not-allowed}
+.btn:not(.primary)[disabled]{opacity:.5;cursor:not-allowed}
 .btn.small{padding:6px 10px;font-size:14px}
 .orient{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink-2)}
 .seg-group{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
@@ -117,8 +118,24 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 .tag.live{border-color:var(--accent);color:var(--accent)}
 .tag.full{color:var(--ink)}
 .tag.warn{border-color:var(--warn);color:var(--warn)}
+.colors{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:start}
+.color-field{display:flex;gap:8px;align-items:center}
+.color-field input[type=color]{width:52px;height:42px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:pointer}
+.color-field .hex{width:110px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-family:ui-monospace,Consolas,monospace;text-transform:uppercase}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+.preset{display:inline-flex;align-items:center;gap:8px}
+.preset .sw{width:30px;height:18px;border-radius:5px;border:1px solid var(--line)}
+.preset.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.color-warn p{color:var(--warn);font-size:14px;line-height:1.45;margin:0 0 12px}
+.cprev{display:grid;gap:8px;padding:18px;border-radius:12px;background:var(--c-bg);border:1.5px solid rgba(var(--c-accent-rgb),.45);color:#F4EFE4;font-weight:500}
+.cprev .clock{font-size:40px;font-weight:900;text-align:center;line-height:1}
+.cprev .pill{justify-self:center;margin-bottom:6px;padding:3px 14px;border-radius:999px;border:1px solid rgba(var(--c-accent-rgb),.45);background:rgba(var(--c-accent-rgb),.08);color:var(--c-accent);font-size:14px;font-weight:700}
+.cprev .r{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-radius:8px;background:var(--c-surface);font-size:17px}
+.cprev .r .t{font-size:22px;font-weight:700}
+.cprev .r.cur{background:var(--c-surface-2);box-shadow:inset 3px 0 0 #49B9AE}
+.cprev .r.next{background:var(--c-accent);color:var(--c-on-accent)}
 .empty{color:var(--ink-2);font-size:15px;margin:0 0 12px}
-@media (max-width:760px){.a-main{grid-template-columns:1fr}.row2{grid-template-columns:1fr}}
+@media (max-width:760px){.a-main{grid-template-columns:1fr}.row2{grid-template-columns:1fr}.colors{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.n-text,.d-corner,.dots span,.d-night{transition:none}}
 </style>
 </head>
@@ -282,6 +299,16 @@ function limitNote(ta, prev){
   ta.value = head + added.slice(0, lo) + tail;
   ta.setSelectionRange(p + lo, p + lo);
 }
+
+// ready-made color pairs [name, main (background), secondary (accent)]; all pass colorWarnings()
+const COLOR_PRESETS = [
+  ["Teget i zlatna", DEFAULTS.colors.main, DEFAULTS.colors.secondary],
+  ["Zelena i zlatna", "#0B1914", "#D4AF5F"],
+  ["Bordo i zlatna", "#2A1018", "#D9B77A"],
+  ["Grafit i plava", "#15181D", "#5FB3D4"],
+  ["Ljubičasta i zlatna", "#1C1430", "#D4AF5F"],
+  ["Teget i srebrna", "#0F1C33", "#C9D3E0"]
+];
 
 let tableBody = null, cityInput = null;
 function refreshTable(){
@@ -458,6 +485,56 @@ function renderAdmin(){
     el("label",{class:"check"}, annOn, "Prikaži najavu na ekranu"),
     el("h2",{text:"Prikaz",style:"margin-top:20px"}),
     el("label",{class:"check"}, secOn, "Prikaži sekunde na satu")
+  ));
+
+  // Colors: main = background, secondary = accent
+  const preview = el("div",{class:"cprev","aria-label":"Pregled boja"},
+    el("div",{class:"clock",text:"14:52"}),
+    el("div",{class:"pill",text:"Ikindija za 0:53"}),
+    el("div",{class:"r cur"}, el("span",{text:"Podne"}), el("span",{class:"t",text:"12:37"})),
+    el("div",{class:"r next"}, el("span",{text:"Ikindija"}), el("span",{class:"t",text:"15:45"})),
+    el("div",{class:"r"}, el("span",{text:"Akšam"}), el("span",{class:"t",text:"18:26"})));
+  const warnBox = el("div",{class:"color-warn",role:"status"});
+  const resetBtn = el("button",{class:"btn",type:"button",text:"Vrati zadane boje",onclick:()=>setColors(DEFAULTS.colors)});
+  const presetBtns = COLOR_PRESETS.map(([name, mainC, secC]) => {
+    const b = el("button",{class:"btn small preset",type:"button",title:`${name}: ${mainC} / ${secC}`,onclick:()=>setColors({main:mainC, secondary:secC})},
+      el("span",{class:"sw",style:`background:linear-gradient(90deg,${mainC} 50%,${secC} 50%)`}), name);
+    b.dataset.colors = mainC + secC;
+    return b;
+  });
+  const colorField = (key, label) => {
+    const pick = el("input",{type:"color","aria-label":label});
+    const hex = el("input",{type:"text",class:"hex",maxlength:"7",spellcheck:"false","aria-label":label + " (hex)"});
+    pick.addEventListener("input", () => setColors({...draft.colors, [key]: pick.value}));
+    hex.addEventListener("input", () => { const v = hex.value.trim(); if (isHex(v)) setColors({...draft.colors, [key]: v}, hex); });
+    hex.addEventListener("blur", () => { hex.value = draft.colors[key]; });
+    return {pick, hex, row: field(label, el("div",{class:"color-field"}, pick, hex))};
+  };
+  const mainF = colorField("main", "Glavna boja (pozadina)"), secF = colorField("secondary", "Sporedna boja (naglasak)");
+  const showColors = (typing) => {
+    const c = draft.colors;
+    for (const [f, k] of [[mainF,"main"],[secF,"secondary"]]){ f.pick.value = c[k].toLowerCase(); if (f.hex !== typing) f.hex.value = c[k]; }
+    applyPalette(preview, c);
+    const warns = colorWarnings(c);
+    warnBox.replaceChildren(...warns.map(w => el("p",{text:w})));
+    resetBtn.disabled = c.main === DEFAULTS.colors.main && c.secondary === DEFAULTS.colors.secondary;
+    presetBtns.forEach(b => b.classList.toggle("on", b.dataset.colors === c.main + c.secondary));
+  };
+  const setColors = (c, typing) => {
+    draft.colors = {main: c.main.toUpperCase(), secondary: c.secondary.toUpperCase()};
+    setDirty(true); showColors(typing);
+  };
+  showColors();
+  main.append(el("section",{class:"a-sec wide"},
+    el("h2",{text:"Boje"}),
+    el("p",{class:"hint",text:"Glavna boja je pozadina ekrana, a sporedna naglašava sljedeći namaz, okvir i odbrojavanje. Nijanse kartica se računaju same iz glavne boje. Ekran se mijenja kad sačuvate."}),
+    el("div",{class:"colors"},
+      el("div",{},
+        el("div",{class:"row2"}, mainF.row, secF.row),
+        el("div",{class:"field"}, el("label",{text:"Gotove kombinacije"}), el("div",{class:"presets"}, ...presetBtns)),
+        warnBox,
+        resetBtn),
+      preview)
   ));
 
   $("btnSave").disabled = !dirty;
