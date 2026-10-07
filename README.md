@@ -109,4 +109,4 @@ Cloudflare's free plan covers this comfortably: one TV reading every 30 seconds 
 ## Notes
 
 - Prayer times come from the official IZ BiH takvim as published by vaktija.ba. Their source repository has no license attached, so if the board is ever offered beyond your own masjid, ask for permission at info@vaktija.ba first.
-- Only one person should edit at a time; the last save wins.
+- If two people edit at the same time, the second save is stopped with a notice instead of silently overwriting the first. You can then load the newer settings or save yours over them. The layout switch at the top merges itself with the newer settings automatically.
