@@ -419,8 +419,27 @@ async function refresh(){
 startDisplay();
 refresh();
 setInterval(refresh, 30000);
-// reload once a night so the screen picks up new versions of the page
-setInterval(() => { const n = new Date(); if (n.getHours() === 3 && n.getMinutes() === 30) location.reload(); }, 60000);
+// reload once a night (03:30–05:00) so the screen picks up new versions of the page,
+// but only when the server answers, so a dropped connection can't leave an error page on the TV.
+// The check uses /api/settings because the service worker never answers for it.
+const loadedAt = new Date();
+let nightlyBusy = false;
+async function nightlyReload(){
+  const now = new Date(), due = new Date(now);
+  due.setHours(3, 30, 0, 0);
+  if (nightlyBusy || loadedAt >= due || now < due || now.getHours() >= 5) return;
+  nightlyBusy = true;
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 10000);
+  try{
+    const r = await fetch("/api/settings", {cache:"no-store", signal:ctl.signal});
+    if (r.ok){ location.reload(); return; }
+  }catch(e){}
+  clearTimeout(timer);
+  nightlyBusy = false;
+}
+setInterval(nightlyReload, 60000);
+// keep a copy of the board so it can also start without internet (see sw.js)
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 })();
 </script>
 </body>
