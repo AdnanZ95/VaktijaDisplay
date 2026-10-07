@@ -200,5 +200,7 @@ function applyPalette(el, colors){
 async function fetchSettings(){
   const r = await fetch("/api/settings", {cache:"no-store"});
   if (!r.ok) throw new Error("settings " + r.status);
-  return normalize(await r.json());
+  const raw = await r.json(), c = normalize(raw);
+  c.updatedAt = (raw && raw.updatedAt) || ""; // version, used by admin to detect saves from elsewhere
+  return c;
 }
