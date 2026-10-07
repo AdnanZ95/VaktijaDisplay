@@ -14,6 +14,7 @@ The board needs no login. Admin is protected by a PIN that is stored on Cloudfla
 | `public/index.html` | The board shown on the TV |
 | `public/admin/index.html` | The admin page |
 | `public/shared.js` | Shared code: the official takvim for 118 locations and the prayer-time math |
+| `public/sw.js` | Keeps a copy of the board in the TV's browser so it can start and reload without internet |
 | `public/_headers` | Small security headers (admin is hidden from search engines) |
 | `functions/api/settings.js` | Reads settings (public) and saves them (PIN required) |
 | `functions/api/login.js` | Checks the admin PIN |
@@ -82,8 +83,8 @@ You can skip this and enter everything in admin instead.
   - `?raspored=vertikalno` always vertical
   - `?raspored=rotirano` vertical, picture turned 90°, for a TV hung on its side that can't rotate its own output
   - no addition: follows the admin layout setting
-- The board reloads itself every night at 03:30 to pick up updates.
-- If the internet drops, the board keeps running with correct times and the last settings it received.
+- The board reloads itself every night between 03:30 and 05:00 to pick up updates, but only when it can reach the server, so a dropped connection never leaves an error page on the screen.
+- If the internet drops, the board keeps running with correct times and the last settings it received. Once it has been opened online, it can also start without internet (for example after a power cut, when the TV comes up before the router).
 - For a reliable setup, an Android TV stick with a kiosk browser app (one that starts on power-up and keeps the screen awake) works well.
 
 ## Everyday use

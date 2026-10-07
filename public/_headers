@@ -2,6 +2,9 @@
   X-Robots-Tag: noindex
   Cache-Control: no-store
 
+/sw.js
+  Cache-Control: no-cache
+
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: same-origin
