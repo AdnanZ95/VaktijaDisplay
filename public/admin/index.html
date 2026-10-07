@@ -115,6 +115,8 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 .day.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--ink-2)}
 .tag.live{border-color:var(--accent);color:var(--accent)}
+.tag.full{color:var(--ink)}
+.tag.warn{border-color:var(--warn);color:var(--warn)}
 .empty{color:var(--ink-2);font-size:15px;margin:0 0 12px}
 @media (max-width:760px){.a-main{grid-template-columns:1fr}.row2{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.n-text,.d-corner,.dots span,.d-night{transition:none}}
@@ -242,6 +244,45 @@ function textInput(path, type="text", extra={}){
 function getPath(o,p){ return p.split(".").reduce((a,k)=> a==null ? a : a[k], o); }
 function setPath(o,p,v){ const ks = p.split("."), last = ks.pop(); const t = ks.reduce((a,k)=> (a[k] ??= {}), o); t[last] = v; }
 
+/* notes may take at most 3 lines on the board. Measured with the board's own font and widths
+   (its notes text box: vertical 892px at 36px, horizontal ~1460px at 32px with many notes). */
+const NOTE_MAX_LINES = 3;
+const noteBoxes = [[892, 36, 46.8], [1460, 32, 40]].map(([w, size, lh]) => {
+  const d = document.createElement("div");
+  d.setAttribute("aria-hidden", "true");
+  d.style.cssText = `position:absolute;left:-10000px;top:0;visibility:hidden;width:${w}px;font:600 ${size}px/${lh}px "Red Hat Display",system-ui,sans-serif;overflow-wrap:anywhere`;
+  document.body.append(d);
+  return {d, lh};
+});
+function noteLines(text){
+  if (!text.trim()) return 0;
+  return Math.max(...noteBoxes.map(b => { b.d.textContent = text; return Math.round(b.d.offsetHeight / b.lh); }));
+}
+const noteFits = text => noteLines(text) <= NOTE_MAX_LINES;
+const redova = k => (k % 10 === 1 && k % 100 !== 11) ? "red" : (k % 10 >= 2 && k % 10 <= 4 && (k % 100 < 12 || k % 100 > 14)) ? "reda" : "redova";
+// line counters shown next to each note; recounted once the board font has loaded
+let noteLinesUpdaters = [];
+if (document.fonts) document.fonts.load('600 36px "Red Hat Display"').then(() => noteLinesUpdaters.forEach(f => f())).catch(() => {});
+// Keeps a note within the limit: of what was just typed or pasted, only the part that fits stays.
+function limitNote(ta, prev){
+  const v = ta.value;
+  if (noteFits(v)) return;
+  if (!noteFits(prev)){ // too long from before: may only be shortened
+    if (v.length > prev.length){ const at = ta.selectionStart - (v.length - prev.length); ta.value = prev; ta.setSelectionRange(at, at); }
+    return;
+  }
+  // the cursor sits right after what was just typed or pasted
+  const end = ta.selectionEnd, tail = v.slice(end), maxP = Math.min(end, prev.length - tail.length);
+  let p = 0; while (p < maxP && v[p] === prev[p]) p++;
+  const head = v.slice(0, p), added = v.slice(p, end);
+  let lo = 0, hi = added.length;
+  while (lo < hi){ const mid = Math.ceil((lo + hi) / 2); if (noteFits(head + added.slice(0, mid) + tail)) lo = mid; else hi = mid - 1; }
+  const space = added.lastIndexOf(" ", lo); // stop after a whole word where possible
+  if (lo < added.length && space > 0) lo = space;
+  ta.value = head + added.slice(0, lo) + tail;
+  ta.setSelectionRange(p + lo, p + lo);
+}
+
 let tableBody = null, cityInput = null;
 function refreshTable(){
   if (!tableBody) return;
@@ -337,7 +378,7 @@ function renderAdmin(){
   const DAY_SHORT = [["P",1,"ponedjeljak"],["U",2,"utorak"],["S",3,"srijeda"],["Č",4,"četvrtak"],["P",5,"petak"],["S",6,"subota"],["N",0,"nedjelja"]];
   const list = el("ul",{class:"notes"});
   const drawNotes = () => {
-    list.textContent = "";
+    list.textContent = ""; noteLinesUpdaters = [];
     if (!draft.notes.length) list.append(el("p",{class:"empty",text:"Nema obavijesti. Dodajte prvu i ona će se prikazati na dnu ekrana."}));
     const now = new Date();
     draft.notes.forEach((n, i) => {
@@ -345,7 +386,15 @@ function renderAdmin(){
       const ta = el("textarea",{"aria-label":`Obavijest ${i+1}`}); ta.value = n.text || "";
       const status = el("span",{class:"tag"});
       const setStatus = () => { const live = noteActive(n, new Date()); status.textContent = live ? "Prikazuje se danas" : ((n.to && dateKey(new Date()) > n.to) ? "Isteklo" : "Danas se ne prikazuje"); status.classList.toggle("live", live); };
-      ta.addEventListener("input", () => { n.text = ta.value; setDirty(true); setStatus(); });
+      const lines = el("span",{class:"tag"});
+      const setLines = () => {
+        const k = noteLines(ta.value), over = k > NOTE_MAX_LINES;
+        lines.textContent = over ? `Preduga: ${k} ${redova(k)}, na ekranu se vide samo ${NOTE_MAX_LINES}. Skratite je.` : `${k}/${NOTE_MAX_LINES} reda na ekranu`;
+        lines.classList.toggle("warn", over);
+        lines.classList.toggle("full", k === NOTE_MAX_LINES);
+      };
+      ta.addEventListener("input", () => { limitNote(ta, n.text || ""); if (ta.value === (n.text || "")){ setLines(); return; } n.text = ta.value; setDirty(true); setStatus(); setLines(); });
+      noteLinesUpdaters.push(setLines);
       const mv = (d) => { const j = i+d; if (j<0 || j>=draft.notes.length) return; [draft.notes[i],draft.notes[j]] = [draft.notes[j],draft.notes[i]]; setDirty(true); drawNotes(); };
       const from = el("input",{type:"date","aria-label":"Prikazuj od"}); from.value = n.from || "";
       const to = el("input",{type:"date","aria-label":"Prikazuj do"}); to.value = n.to || "";
@@ -360,19 +409,19 @@ function renderAdmin(){
         });
         days.append(btn);
       }
-      setStatus();
+      setStatus(); setLines();
       list.append(el("li",{}, el("div",{class:"note-item"},
         el("div",{class:"note-row"}, ta, el("div",{class:"ctl"},
           el("button",{class:"btn small",type:"button","aria-label":"Pomjeri gore",text:"↑",onclick:()=>mv(-1)}),
           el("button",{class:"btn small",type:"button","aria-label":"Pomjeri dole",text:"↓",onclick:()=>mv(1)}),
           el("button",{class:"btn small",type:"button",text:"Ukloni",onclick:()=>{ draft.notes.splice(i,1); setDirty(true); drawNotes(); }}))),
-        el("div",{class:"note-sched"}, "Od", from, "do", to, days, status))));
+        el("div",{class:"note-sched"}, "Od", from, "do", to, days, status, lines))));
     });
   };
   drawNotes();
   main.append(el("section",{class:"a-sec wide"},
     el("h2",{text:"Obavijesti"}),
-    el("p",{class:"hint",text:"Kratke poruke koje se smjenjuju na dnu ekrana. Datumi i dani su neobavezni: bez njih se obavijest prikazuje svaki dan. Ako odaberete dane, prikazuje se samo tim danima, npr. samo četvrtkom za ders."}),
+    el("p",{class:"hint",text:"Kratke poruke koje se smjenjuju na dnu ekrana, najviše 3 reda svaka. Datumi i dani su neobavezni: bez njih se obavijest prikazuje svaki dan. Ako odaberete dane, prikazuje se samo tim danima, npr. samo četvrtkom za ders."}),
     list,
     el("button",{class:"btn",type:"button",text:"Dodaj obavijest",onclick:()=>{ draft.notes.push({id:Date.now().toString(36),text:"",from:"",to:"",days:[]}); setDirty(true); drawNotes(); list.querySelector("li:last-child textarea")?.focus(); }}),
     el("div",{style:"margin-top:16px;max-width:260px"}, field("Smjena svakih (sekundi)", textInput("noteSeconds","number",{step:"1",min:"4"})))
