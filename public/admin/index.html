@@ -116,7 +116,6 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 .tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--ink-2)}
 .tag.live{border-color:var(--accent);color:var(--accent)}
 .empty{color:var(--ink-2);font-size:15px;margin:0 0 12px}
-.readonly-note{background:var(--surface);border:1px solid var(--warn);color:var(--warn);border-radius:12px;padding:12px 14px;font-size:15px}
 @media (max-width:760px){.a-main{grid-template-columns:1fr}.row2{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.n-text,.d-corner,.dots span,.d-night{transition:none}}
 </style>
@@ -157,7 +156,7 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 const $ = id => document.getElementById(id);
 const PIN_KEY = "vaktija.adminPin";
 let config = normalize(null);
-let draft = null, dirty = false, canWrite = null;
+let draft = null, dirty = false;
 let pin = null;
 
 /* ---------------- PIN + API ---------------- */
@@ -217,7 +216,7 @@ $("btnPreview").onclick = () => window.open("/", "_blank");
 /* ---------------- admin ---------------- */
 function setDirty(v){
   dirty = v;
-  $("btnSave").disabled = !v || canWrite === false;
+  $("btnSave").disabled = !v;
   if (v) setSaveState("Nesačuvane promjene");
 }
 function setSaveState(t, err){ const s = $("saveState"); s.textContent = t; s.classList.toggle("err", !!err); }
@@ -257,9 +256,6 @@ function renderAdmin(){
   if (!dirty) draft = clone(config);
   renderOrientSwitch();
   const main = $("aMain"); main.textContent = "";
-  if (canWrite === false){
-    main.append(el("div",{class:"a-sec wide"}, el("div",{class:"readonly-note",text:"Možete pregledati postavke, ali ih ne možete mijenjati. Promjene mogu sačuvati samo vlasnik i urednici ove stranice."})));
-  }
 
   // Masjid
   main.append(el("section",{class:"a-sec"},
@@ -415,7 +411,7 @@ function renderAdmin(){
     el("label",{class:"check"}, secOn, "Prikaži sekunde na satu")
   ));
 
-  $("btnSave").disabled = !dirty || canWrite === false;
+  $("btnSave").disabled = !dirty;
   if (!dirty) setSaveState("Sve je sačuvano");
 }
 const ORIENTS = [["auto","Automatski","Prati oblik ekrana"],["landscape","Horizontalno","Uvijek horizontalni raspored"],["portrait","Vertikalno","Uvijek vertikalni raspored"],["rotate","Zarotirano","Vertikalno, slika okrenuta za 90° za TV koji ne može sam rotirati prikaz"]];
