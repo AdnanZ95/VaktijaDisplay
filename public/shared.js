@@ -38,16 +38,19 @@ const store = {
   set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
   del(k){ try{ localStorage.removeItem(k); }catch(e){} }
 };
+const isObj = v => !!v && typeof v === "object" && !Array.isArray(v);
+// Settings as stored -> complete settings: missing values come from DEFAULTS, and grouped
+// settings (offsets, night, colors...) are merged key by key, so a new option never breaks old data.
 function normalize(raw){
   const c = clone(DEFAULTS);
-  if (!raw || typeof raw !== "object") return c;
+  if (!isObj(raw)) return c;
   for (const k of Object.keys(DEFAULTS)){
-    if (raw[k] === undefined || raw[k] === null) continue;
-    if (k === "offsets" || k === "announcement" || k === "night" || k === "colors" || k === "jumuah") c[k] = Object.assign(c[k], raw[k]);
-    else c[k] = raw[k];
+    const v = raw[k];
+    if (v === undefined || v === null) continue;
+    if (isObj(DEFAULTS[k])){ if (isObj(v)) Object.assign(c[k], v); }
+    else if (Array.isArray(DEFAULTS[k])){ if (Array.isArray(v)) c[k] = v; }
+    else c[k] = v;
   }
-  if (!Array.isArray(c.notes)) c.notes = [];
-  if (typeof c.overrides !== "object" || Array.isArray(c.overrides)) c.overrides = {};
   for (const k of ["main","secondary"]) if (!isHex(c.colors[k])) c.colors[k] = DEFAULTS.colors[k];
   return c;
 }

@@ -40,19 +40,12 @@ body{margin:0;height:100%;font-family:var(--sans);background:var(--bg);color:var
 [hidden]{display:none !important}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-/* ---------- chooser ---------- */
+/* ---------- lock screen ---------- */
 .chooser{min-height:100%;display:grid;place-items:center;padding:24px;background:var(--night);color:var(--stone)}
 .chooser-inner{max-width:520px;width:100%}
 .chooser h1{font-weight:900;font-size:clamp(40px,8vw,64px);margin:0 0 4px;letter-spacing:-.02em}
-.chooser .ar{font-family:var(--arabic);font-size:28px;color:var(--gold);margin:0 0 20px}
 .chooser p{color:var(--mist);line-height:1.5;margin:0 0 28px}
-.choice{display:block;width:100%;text-align:left;padding:18px 20px;margin-bottom:12px;border-radius:14px;border:1px solid var(--night-3);background:var(--night-2);color:var(--stone);cursor:pointer}
-.choice strong{display:block;font-size:19px;margin-bottom:2px}
-.choice span{color:var(--mist);font-size:15px}
-.choice:hover{border-color:var(--iznik)}
-.choice[disabled]{opacity:.5;cursor:not-allowed}
 
-/* ---------- lock ---------- */
 .pin-input{width:100%;box-sizing:border-box;padding:16px 18px;border-radius:12px;border:1px solid var(--night-3);background:var(--night-2);color:var(--stone);font-size:32px;letter-spacing:.5em;text-align:center;font-variant-numeric:tabular-nums}
 .pin-input:focus{outline:3px solid var(--gold);outline-offset:2px}
 .lock-row{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
@@ -274,7 +267,6 @@ input[type=date].inp{display:block}
 <script src="/shared.js"></script>
 <script>
 (() => {
-const $ = id => document.getElementById(id);
 const PIN_KEY = "vaktija.adminPin";
 let config = normalize(null);
 let draft = null, dirty = false;

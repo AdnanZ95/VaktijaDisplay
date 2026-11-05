@@ -19,6 +19,7 @@ The board needs no login. Admin is protected by a PIN that is stored on Cloudfla
 | `functions/api/settings.js` | Reads settings (public) and saves them (PIN required) |
 | `functions/api/login.js` | Checks the admin PIN |
 | `lib/auth.js` | PIN check with a limit of 10 wrong attempts per 15 minutes |
+| `tests/run.mjs` | Checks for the prayer-time rules (takvim, summer/winter time, džuma, offsets, notes). Run with `node tests/run.mjs`; GitHub runs them on every pull request |
 | `seed-settings.json` | Your current settings from the test version, to copy over in step 6 |
 
 ## Setup (about 20 minutes, once)
@@ -106,6 +107,10 @@ In the Pages project: **Settings** → **Variables and Secrets** → edit `ADMIN
 ## Updating the code
 
 Upload changed files to the GitHub repository (or replace them there). Cloudflare redeploys automatically within a minute or two, and the TV picks up the new version at its next nightly reload, or immediately if you reload it.
+
+## Checking changes
+
+Before merging a change, the **Tests** check on the pull request must be green. It runs `tests/run.mjs`, which compares the board's times with the official takvim and checks the džuma, summer/winter time, offset, manual-time and note rules. To run it yourself, install Node.js and run `node tests/run.mjs` in this folder.
 
 ## Costs
 
