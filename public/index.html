@@ -248,8 +248,7 @@ function buildCards(){
   }
 }
 const allPrayerEls = k => document.querySelectorAll(`#dCards [data-key="${k}"], #dRows [data-key="${k}"]`);
-function isFriday(d){ return d.getDay() === 5; }
-function nameFor(k, d){ return (k === "dhuhr" && isFriday(d)) ? NAMES.jumuah : NAMES[k]; }
+function nameFor(k, d){ return prayerName(k, d, config); }
 function setField(f, text){ document.querySelectorAll(`#display [data-f="${f}"]`).forEach(e => { e.textContent = text; }); }
 
 /* layout: the board is drawn at a fixed design size and scaled to the screen */
