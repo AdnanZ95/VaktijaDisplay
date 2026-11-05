@@ -192,5 +192,73 @@ await atest("POST /api/ping works without a PIN; GET /api/screens needs it", asy
   eq([ok.status, Object.keys((await ok.json()).screens)], [200, ["screen0001"]]);
 });
 
+/* ---------- offline alert (worker/alert.js) ---------- */
+const W = await import("../worker/alert.js");
+const at = (iso) => Date.parse(iso);
+const scr = (lastIso, first = "2026-11-01T00:00:00Z") => ({ at: lastIso, first });
+const SET = { masjidName: "Džemat Livač", alerts: { on: true, afterMin: 30, quietFrom: "", quietTo: "" } };
+const started = { startedAt: "2026-11-01T00:00:00.000Z", offline: {} };
+
+await atest("first run sends a 'connected' message with the current status", async () => {
+  const r = W.decide(null, { a: scr("2026-11-05T13:55:00Z") }, SET, at("2026-11-05T14:00:00Z"));
+  eq([r.messages.length, r.messages[0].title, /uživo/.test(r.messages[0].message), !!r.state.startedAt], [1, "Džemat Livač: obavještenja su uključena", true, true]);
+});
+await atest("a screen silent for longer than the limit triggers one alert, not repeated", async () => {
+  const s = { a: scr("2026-11-05T13:20:00Z") };
+  const r1 = W.decide(started, s, SET, at("2026-11-05T14:00:00Z"));
+  eq([r1.messages.length, r1.messages[0].priority, /14:20/.test(r1.messages[0].message), /40 min/.test(r1.messages[0].message)], [1, 4, true, true]);
+  const r2 = W.decide(r1.state, s, SET, at("2026-11-05T14:10:00Z"));
+  eq(r2.messages.length, 0);
+});
+await atest("no alert before the limit", async () => {
+  eq(W.decide(started, { a: scr("2026-11-05T13:40:00Z") }, SET, at("2026-11-05T14:00:00Z")).messages.length, 0);
+});
+await atest("back online sends a message and clears the alert", async () => {
+  const off = { startedAt: started.startedAt, offline: { a: true } };
+  const r = W.decide(off, { a: scr("2026-11-05T14:08:00Z") }, SET, at("2026-11-05T14:10:00Z"));
+  eq([r.messages.length, r.messages[0].title, r.state.offline], [1, "Džemat Livač: ekran je ponovo uključen", {}]);
+});
+await atest("quiet hours (across midnight) hold the alert until they end", async () => {
+  const q = { ...SET, alerts: { ...SET.alerts, quietFrom: "23:00", quietTo: "05:00" } };
+  const s = { a: scr("2026-11-05T21:00:00Z") }; // 22:00 local
+  eq(W.decide(started, s, q, at("2026-11-05T23:00:00Z")).messages.length, 0);      // 00:00 local, quiet
+  const r = W.decide(started, s, q, at("2026-11-06T04:10:00Z"));                     // 05:10 local
+  eq([r.messages.length, /5\.11\./.test(r.messages[0].message)], [1, true]);
+  eq([W.inQuiet(q.alerts, at("2026-11-05T21:59:00Z")), W.inQuiet(q.alerts, at("2026-11-05T22:00:00Z")), W.inQuiet(q.alerts, at("2026-11-06T03:59:00Z")), W.inQuiet(q.alerts, at("2026-11-06T04:00:00Z"))], [false, true, true, false]);
+});
+await atest("switched off in admin: nothing is sent", async () => {
+  const off = { ...SET, alerts: { ...SET.alerts, on: false } };
+  eq(W.decide(started, { a: scr("2026-11-05T12:00:00Z") }, off, at("2026-11-05T14:00:00Z")).messages.length, 0);
+});
+await atest("with two screens each is named and handled on its own", async () => {
+  const s = { a: scr("2026-11-05T13:58:00Z", "2026-11-01T00:00:00Z"), b: scr("2026-11-05T12:00:00Z", "2026-11-02T00:00:00Z") };
+  const r = W.decide(started, s, SET, at("2026-11-05T14:00:00Z"));
+  eq([r.messages.length, r.messages[0].title, Object.keys(r.state.offline)], [1, "Džemat Livač: ekran 2 se ne javlja", ["b"]]);
+});
+await atest("the worker sends through ntfy, and retries next time if sending fails", async () => {
+  const env = fakeEnv(); env.NTFY_TOPIC = "vaktija-test"; env.ADMIN_URL = "https://x/admin/#ekran";
+  await env.VAKTIJA.put("settings", JSON.stringify(SET));
+  await env.VAKTIJA.put("screens", JSON.stringify({ screens: { a: scr("2026-11-05T13:00:00Z") } }));
+  await env.VAKTIJA.put("alert-state", JSON.stringify(started));
+  const sent = [];
+  const fail = await W.runCheck(env, at("2026-11-05T14:00:00Z"), async () => ({ ok: false, status: 500 }));
+  eq([fail.error, JSON.parse(await env.VAKTIJA.get("alert-state")).offline], ["ntfy 500", {}]);
+  const ok = await W.runCheck(env, at("2026-11-05T14:10:00Z"), async (url, o) => { sent.push([url, JSON.parse(o.body)]); return { ok: true }; });
+  eq([ok.sent, sent[0][0], sent[0][1].topic, sent[0][1].click, JSON.parse(await env.VAKTIJA.get("alert-state")).offline], [1, "https://ntfy.sh", "vaktija-test", "https://x/admin/#ekran", { a: true }]);
+  const writes = env.writes();
+  await W.runCheck(env, at("2026-11-05T14:20:00Z"), async () => ({ ok: true }));
+  eq(env.writes(), writes); // nothing changed, nothing written
+});
+await atest("admin can see that the alert worker is connected", async () => {
+  const env = fakeEnv();
+  await env.VAKTIJA.put("alert-state", JSON.stringify(started));
+  const r = await screensApi.onRequestGet({ request: new Request("https://x/api/screens", { headers: { "x-admin-pin": "1234" } }), env });
+  eq((await r.json()).alertsSince, started.startedAt);
+});
+test("new settings have alerts on (30 min, no night pause) and an empty archive", () => {
+  const c = S.normalize({});
+  eq([c.alerts, c.archive], [{ on: true, afterMin: 30, quietFrom: "", quietTo: "" }, []]);
+});
+
 console.log(`${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

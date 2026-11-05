@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Vaktija · postavke</title>
 <meta name="robots" content="noindex">
+<link rel="manifest" href="/admin/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/admin/favicon.png">
+<link rel="apple-touch-icon" href="/admin/apple-touch-icon.png">
+<meta name="theme-color" content="#13213A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vaktija">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Red+Hat+Display:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -157,6 +165,20 @@ input[type=date].inp{display:block}
 .tag.live{border-color:var(--accent);color:var(--accent)}
 .tag.full{color:var(--ink)}
 .tag.warn{border-color:var(--warn);color:var(--warn)}
+.setup{border-top:1px solid var(--line);padding-top:12px}
+.setup > summary{cursor:pointer;font-weight:700;font-size:15px;color:var(--accent);min-height:32px}
+.setup .steps{margin-top:10px}
+.setup code{font-family:ui-monospace,Consolas,monospace;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 5px;overflow-wrap:anywhere}
+.topic{display:flex;align-items:center;gap:8px;margin:8px 0 4px;flex-wrap:wrap}
+.topic code{font-size:15px;padding:6px 10px}
+.steps .small{display:block;font-size:12px;color:var(--ink-2)}
+.dash{align-self:center;color:var(--ink-2)}
+.steps{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px;color:var(--ink);line-height:1.4}
+.arch-grp{margin-bottom:14px}
+.arch-item{display:grid;gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.arch-text{margin:0;font-size:15px;line-height:1.4;color:var(--ink);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.note-item.flash{animation:flash 1.6s ease}
+@keyframes flash{0%,40%{border-color:var(--accent);box-shadow:0 0 0 3px rgba(31,127,121,.25)}100%{box-shadow:none}}
 .add-btn{width:100%;min-height:50px;border:1.5px dashed var(--line);background:transparent;border-radius:12px;font-weight:700;color:var(--accent);cursor:pointer}
 .empty{color:var(--ink-2);font-size:15px;margin:0 0 12px}
 
@@ -244,7 +266,7 @@ input[type=date].inp{display:block}
   .m-hide{display:none}
   .m-show{display:inline}
 }
-@media (max-width:480px){.pedit{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:480px){.pedit{grid-template-columns:minmax(0,1fr)}.row2:has(> .quiet){grid-template-columns:minmax(0,1fr)}}
 @media (max-width:380px){.row2{grid-template-columns:1fr}.prow .nm .ar{display:none}}
 @media (prefers-reduced-motion:reduce){.switch,.switch::after,.chev{transition:none}}
 </style>
@@ -560,15 +582,23 @@ function renderAdmin(){
   const annText = el("textarea",{"aria-label":"Tekst najave"}); annText.value = draft.announcement.text || "";
   annText.addEventListener("input", () => { draft.announcement.text = annText.value; setDirty(true); refreshTable(); });
   const DAY_SHORT = [["P",1,"ponedjeljak"],["U",2,"utorak"],["S",3,"srijeda"],["Č",4,"četvrtak"],["P",5,"petak"],["S",6,"subota"],["N",0,"nedjelja"]];
-  const list = el("ul",{class:"notes"});
+  const list = el("ul",{class:"notes"}), archList = el("ul",{class:"notes arch"});
+  const archSum = el("span"), archBox = el("details",{class:"grp arch-grp"});
+  const todayK = dateKey(new Date());
+  const expired = n => !!(n.to && todayK > n.to);
+  const ARCHIVE_MAX = 30;
+  let focusNote = null;
+  const fmtDay = k => { const [y, m, d] = k.split("-"); return `${+d}.${+m}.${y}.`; };
   const drawNotes = () => {
     list.textContent = ""; noteLinesUpdaters = [];
-    if (!draft.notes.length) list.append(el("p",{class:"empty",text:"Nema obavijesti. Dodajte prvu i ona će se prikazati na dnu ekrana."}));
-    draft.notes.forEach((n, i) => {
+    const shown = draft.notes.map((n, i) => i).filter(i => !expired(draft.notes[i]));
+    if (!shown.length) list.append(el("p",{class:"empty",text:"Nema obavijesti. Dodajte prvu i ona će se prikazati na dnu ekrana."}));
+    shown.forEach((i, pos) => {
+      const n = draft.notes[i];
       n.days = Array.isArray(n.days) ? n.days : [];
-      const ta = el("textarea",{"aria-label":`Obavijest ${i+1}`,placeholder:"Tekst obavijesti"}); ta.value = n.text || "";
+      const ta = el("textarea",{"aria-label":`Obavijest ${pos+1}`,placeholder:"Tekst obavijesti"}); ta.value = n.text || "";
       const status = el("span",{class:"tag"});
-      const setStatus = () => { const live = noteActive(n, new Date()); status.textContent = live ? "Prikazuje se danas" : ((n.to && dateKey(new Date()) > n.to) ? "Isteklo" : "Danas se ne prikazuje"); status.classList.toggle("live", live); };
+      const setStatus = () => { const live = noteActive(n, new Date()); status.textContent = live ? "Prikazuje se danas" : expired(n) ? "Isteklo (prelazi u arhivu)" : "Danas se ne prikazuje"; status.classList.toggle("live", live); };
       const lines = el("span",{class:"tag"});
       const setLines = () => {
         const k = noteLines(ta.value), over = k > NOTE_MAX_LINES;
@@ -578,7 +608,8 @@ function renderAdmin(){
       };
       ta.addEventListener("input", () => { limitNote(ta, n.text || ""); if (ta.value === (n.text || "")){ setLines(); return; } n.text = ta.value; setDirty(true); setStatus(); setLines(); });
       noteLinesUpdaters.push(setLines);
-      const mv = (d) => { const j = i+d; if (j<0 || j>=draft.notes.length) return; [draft.notes[i],draft.notes[j]] = [draft.notes[j],draft.notes[i]]; setDirty(true); drawNotes(); };
+      // moves past the hidden (expired) notes, so the visible order changes by one step
+      const mv = (d) => { const j = shown[pos + d]; if (j === undefined) return; [draft.notes[i],draft.notes[j]] = [draft.notes[j],draft.notes[i]]; setDirty(true); drawNotes(); };
       const fid = "nf"+i, tid = "nt"+i;
       const from = el("input",{type:"date",class:"inp",id:fid}); from.value = n.from || "";
       const to = el("input",{type:"date",class:"inp",id:tid}); to.value = n.to || "";
@@ -594,19 +625,68 @@ function renderAdmin(){
         days.append(btn);
       }
       setStatus(); setLines();
-      list.append(el("li",{}, el("div",{class:"note-item"},
+      // removing keeps a copy in the archive (an empty note just goes)
+      const remove = () => {
+        draft.notes.splice(i, 1);
+        if ((n.text||"").trim()) draft.archive = [{id:n.id || Date.now().toString(36), text:n.text, days:n.days, archivedAt:todayK}, ...(draft.archive || [])].slice(0, ARCHIVE_MAX);
+        setDirty(true); drawNotes();
+      };
+      list.append(el("li",{"data-id":n.id||""}, el("div",{class:"note-item"},
         ta,
         el("div",{class:"note-dates"},
           el("div",{}, el("label",{for:fid,text:"Prikazuj od"}), from),
           el("div",{}, el("label",{for:tid,text:"do"}), to)),
         el("div",{}, el("span",{class:"note-days-lbl",text:"Samo ovim danima (neobavezno)"}), days),
         el("div",{class:"note-foot"}, status, lines, el("div",{class:"ctl"},
-          el("button",{class:"btn small",type:"button","aria-label":"Pomjeri gore",text:"↑",disabled:i===0?"":null,onclick:()=>mv(-1)}),
-          el("button",{class:"btn small",type:"button","aria-label":"Pomjeri dole",text:"↓",onclick:()=>mv(1)}),
-          el("button",{class:"btn small danger",type:"button",text:"Ukloni",onclick:()=>{ if ((n.text||"").trim() && !confirm("Ukloniti ovu obavijest?")) return; draft.notes.splice(i,1); setDirty(true); drawNotes(); }}))))));
-      if (i === draft.notes.length - 1) list.lastChild.querySelector('[aria-label="Pomjeri dole"]').disabled = true;
+          el("button",{class:"btn small",type:"button","aria-label":"Pomjeri gore",text:"↑",disabled:pos===0?"":null,onclick:()=>mv(-1)}),
+          el("button",{class:"btn small",type:"button","aria-label":"Pomjeri dole",text:"↓",disabled:pos===shown.length-1?"":null,onclick:()=>mv(1)}),
+          el("button",{class:"btn small danger",type:"button",text:"Ukloni",title:"Premješta obavijest u arhivu",onclick:remove}))))));
     });
+    drawArchive();
+    if (focusNote){
+      const li = list.querySelector(`li[data-id="${CSS.escape(focusNote)}"]`); focusNote = null;
+      if (li){ li.scrollIntoView({block:"center"}); li.querySelector('input[type=date]').focus(); li.firstChild.classList.add("flash"); }
+    }
   };
+  // archive: notes removed from the list, and notes whose end date has passed
+  const drawArchive = () => {
+    archList.textContent = "";
+    draft.archive = Array.isArray(draft.archive) ? draft.archive : [];
+    const items = [
+      ...draft.notes.filter(expired).map(n => ({n, kind:"expired", when:n.to})),
+      ...draft.archive.map(n => ({n, kind:"archived", when:n.archivedAt}))
+    ].filter(x => (x.n.text||"").trim());
+    archSum.textContent = items.length ? `${items.length} ${items.length % 10 === 1 && items.length % 100 !== 11 ? "obavijest" : "obavijesti"}` : "Prazna";
+    if (!items.length){ archList.append(el("p",{class:"empty",text:"Uklonjene i istekle obavijesti čuvaju se ovdje, da ih možete ponovo prikazati bez prepisivanja."})); return; }
+    for (const {n, kind, when} of items){
+      const again = () => {
+        let id = n.id;
+        if (kind === "expired"){ n.from = ""; n.to = ""; }
+        else {
+          draft.archive = draft.archive.filter(x => x !== n);
+          id = Date.now().toString(36);
+          draft.notes.push({id, text:n.text, from:"", to:"", days:Array.isArray(n.days) ? n.days : []});
+        }
+        focusNote = id; setDirty(true); drawNotes();
+      };
+      const del = () => {
+        if (!confirm("Trajno obrisati ovu obavijest?")) return;
+        if (kind === "expired") draft.notes = draft.notes.filter(x => x !== n);
+        else draft.archive = draft.archive.filter(x => x !== n);
+        setDirty(true); drawNotes();
+      };
+      archList.append(el("li",{}, el("div",{class:"arch-item"},
+        el("p",{class:"arch-text",text:n.text}),
+        el("div",{class:"note-foot"},
+          el("span",{class:"tag",text:(kind === "expired" ? "Isteklo " : "Uklonjeno ") + (when ? fmtDay(when) : "")}),
+          el("div",{class:"ctl"},
+            el("button",{class:"btn small danger",type:"button",text:"Obriši",onclick:del}),
+            el("button",{class:"btn small primary",type:"button",text:"Ponovi",title:"Vraća obavijest na ekran; po potrebi upišite nove datume",onclick:again}))))));
+    }
+  };
+  archBox.append(el("summary",{}, el("span",{class:"gt"}, el("b",{text:"Arhiva"}), archSum), svg(CHEV)), el("div",{class:"grp-body"}, archList));
+  if (openGroups.has("arhiva")) archBox.open = true;
+  archBox.addEventListener("toggle", () => { if (archBox.open) openGroups.add("arhiva"); else openGroups.delete("arhiva"); });
   drawNotes();
   main.append(el("section",{"data-tab":"obavijesti"},
     el("div",{class:"tab-head"}, el("h2",{text:"Obavijesti"}), el("p",{text:"Poruke na dnu ekrana i najava preko cijelog ekrana."})),
@@ -615,6 +695,7 @@ function renderAdmin(){
       el("p",{class:"hint",text:"Smjenjuju se na dnu ekrana, najviše 3 reda svaka. Bez datuma i dana prikazuju se svaki dan."}),
       list,
       el("button",{class:"add-btn",type:"button",text:"+ Dodaj obavijest",onclick:()=>{ draft.notes.push({id:Date.now().toString(36),text:"",from:"",to:"",days:[]}); setDirty(true); drawNotes(); list.querySelector("li:last-child textarea")?.focus(); }})),
+    archBox,
     el("div",{class:"card"},
       el("h3",{text:"Najava preko cijelog ekrana"}),
       el("p",{class:"hint",text:"Prekriva cijeli prikaz dok je uključena, npr. za promjenu termina ili važnu vijest. Isključite je kad više nije potrebna."}),
@@ -725,12 +806,15 @@ function renderAdmin(){
           el("div",{class:"field"}, el("label",{text:"Gotove kombinacije"}), el("div",{class:"presets"}, ...presetBtns)),
           warnBox, resetBtn),
         preview)),
-    group("uredjaj","Ovaj uređaj", () => "Odjava",
+    group("uredjaj","Ovaj uređaj", () => isStandalone() ? "Otvoreno kao aplikacija · odjava" : "Dodaj na početni ekran · odjava",
+      installBox(),
+      el("h3",{text:"Odjava",style:"margin:18px 0 4px;font-size:15px"}),
       el("p",{class:"hint",text:"Odjava briše zapamćeni PIN sa ovog uređaja."}),
       el("button",{class:"btn danger",type:"button",text:"Odjavi se",onclick:logout}))
   ));
 
   if (!$("tabEkran")) main.append(buildEkranTab());
+  $("alertsSlot").replaceChildren(buildAlertsCard());
   renderOrientSwitch();
   refreshTable();
   renderScreens();
@@ -740,9 +824,41 @@ function renderAdmin(){
   syncSaveBar();
 }
 
+/* ---------------- admin as an app on the phone's home screen ---------------- */
+let installPrompt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; if (draft) renderAdmin(); });
+window.addEventListener("appinstalled", () => { installPrompt = null; if (draft) renderAdmin(); });
+const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+function installBox(){
+  const box = el("div",{class:"install"});
+  if (isStandalone()){
+    box.append(el("p",{class:"hint",style:"margin:0",text:"Admin je otvoren kao aplikacija sa početnog ekrana."}));
+    return box;
+  }
+  box.append(el("p",{class:"hint",text:"Dodajte admin na početni ekran telefona: otvara se kao aplikacija, preko cijelog ekrana, jednim dodirom."}));
+  if (installPrompt){
+    box.append(el("button",{class:"btn primary",type:"button",text:"Instaliraj aplikaciju",onclick:async () => {
+      const p = installPrompt; installPrompt = null;
+      try{ await p.prompt(); await p.userChoice; }catch(e){}
+      renderAdmin();
+    }}));
+  } else if (isIOS()){
+    box.append(el("ol",{class:"steps"},
+      el("li",{text:"U Safariju dodirnite dugme Dijeli (kvadrat sa strelicom)."}),
+      el("li",{text:"Odaberite „Dodaj na početni ekran” (Add to Home Screen)."}),
+      el("li",{text:"Otvorite Vaktiju sa početnog ekrana i jednom se prijavite uz „Zapamti ovaj uređaj”."})));
+  } else {
+    box.append(el("ol",{class:"steps"},
+      el("li",{text:"U Chromeu otvorite meni (tri tačke gore desno)."}),
+      el("li",{text:"Odaberite „Instaliraj aplikaciju” ili „Dodaj na početni ekran”."})));
+  }
+  return box;
+}
+
 /* ---------------- Ekran: screen status and live preview ---------------- */
 const ONLINE_MS = 12 * 60000; // screens report every 5 minutes; two missed reports = offline
-let screens = null, screensAt = 0, screensTimer = null;
+let screens = null, screensAt = 0, screensTimer = null, alertsSince = null;
 async function loadScreens(){
   if (!pin || $("admin").hidden) return;
   try{
@@ -750,6 +866,7 @@ async function loadScreens(){
     if (!r.ok) return;
     const d = await r.json();
     screens = Object.values(d.screens || {}).sort((a, b) => Date.parse(a.first) - Date.parse(b.first));
+    alertsSince = d.alertsSince || "";
     screensAt = Date.now() - Date.parse(d.now); // server clock vs this device
   }catch(e){ return; }
   renderScreens();
@@ -771,6 +888,11 @@ function renderScreens(){
   pill.className = "scr-pill " + (online.length ? "on" : screens.length ? "off" : "");
   $("scrPillText").textContent = online.length ? (screens.length > 1 ? `Ekrani uživo: ${online.length}/${screens.length}` : "Ekran uživo") : screens.length ? "Ekran van mreže" : "Ekran nije javljen";
   pill.title = "Stanje ekrana u džamiji";
+  const conn = $("alertConn");
+  if (conn && alertsSince !== null){
+    conn.className = "tag" + (alertsSince ? " live" : "");
+    conn.textContent = alertsSince ? `Povezano od ${ago(alertsSince)}` : "Još nije povezano";
+  }
   if (!list) return;
   if (!screens.length){
     list.replaceChildren(el("p",{class:"empty",text:"Nijedan ekran se još nije javio. Ekran se javlja svakih 5 minuta nakon što učita najnoviju verziju prikaza (svake noći oko 03:30, ili odmah ako osvježite stranicu na TV-u)."}));
@@ -794,6 +916,50 @@ function renderScreens(){
 function startScreens(){ clearInterval(screensTimer); loadScreens(); screensTimer = setInterval(() => { if (!document.hidden) loadScreens(); else renderScreens(); }, 60000); }
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("admin").hidden) loadScreens(); });
 
+/* offline alert: settings here, the check itself runs in a Cloudflare Worker (worker/alert.js) */
+const TOPIC_KEY = "vaktija.ntfyTopic";
+function ntfyTopic(){
+  let t = store.get(TOPIC_KEY);
+  if (!/^vaktija-[a-z0-9]{12}$/.test(t || "")){
+    const r = new Uint8Array(12); crypto.getRandomValues(r);
+    t = "vaktija-" + [...r].map(b => "abcdefghijklmnopqrstuvwxyz0123456789"[b % 36]).join(""); store.set(TOPIC_KEY, t);
+  }
+  return t;
+}
+function buildAlertsCard(){
+  const after = el("select",{"aria-label":"Javi nakon"});
+  for (const m of [15, 30, 60, 120]) after.append(el("option",{value:String(m),text: m < 60 ? `${m} minuta` : `${m/60} ${m === 60 ? "sat" : "sata"}`}));
+  after.value = String([15,30,60,120].includes(+draft.alerts.afterMin) ? +draft.alerts.afterMin : 30);
+  after.addEventListener("change", () => { draft.alerts.afterMin = +after.value; setDirty(true); });
+  const time = key => { const i = el("input",{type:"time",class:"inp"}); i.value = draft.alerts[key] || ""; i.addEventListener("input", () => { draft.alerts[key] = i.value; setDirty(true); }); return i; };
+  const topic = ntfyTopic();
+  const copyBtn = el("button",{class:"btn small",type:"button",text:"Kopiraj",onclick:async () => {
+    try{ await navigator.clipboard.writeText(topic); copyBtn.textContent = "Kopirano"; }catch(e){ copyBtn.textContent = "Označite i kopirajte"; }
+    setTimeout(() => { copyBtn.textContent = "Kopiraj"; }, 2000);
+  }});
+  const setup = el("details",{class:"setup"},
+    el("summary",{text:"Kako podesiti (jednom, oko 10 minuta)"}),
+    el("ol",{class:"steps"},
+      el("li",{}, "Instalirajte aplikaciju ", el("b",{text:"ntfy"}), " (Google Play ili App Store), dodirnite + i pretplatite se na temu:",
+        el("div",{class:"topic"}, el("code",{text:topic}), copyBtn),
+        el("span",{class:"small",text:"Naziv teme je tajna: ko ga zna, vidi obavijesti. Ovaj je nasumičan i zapamćen na ovom uređaju."})),
+      el("li",{}, "U Cloudflare kontrolnoj tabli: ", el("b",{text:"Workers & Pages → Create → Create Worker"}), ", nazovite ga ", el("code",{text:"vaktija-obavjestenja"}), " i kliknite Deploy."),
+      el("li",{}, el("b",{text:"Edit code"}), ": obrišite primjer, zalijepite sadržaj datoteke ", el("code",{text:"worker/alert.js"}), " iz GitHub repozitorija i kliknite Deploy."),
+      el("li",{}, "U postavkama Workera, ", el("b",{text:"Bindings → Add → KV namespace"}), ": ime ", el("code",{text:"VAKTIJA"}), ", namespace ", el("code",{text:"vaktija-settings"}), "."),
+      el("li",{}, el("b",{text:"Variables and Secrets → Add"}), ": tip Secret, ime ", el("code",{text:"NTFY_TOPIC"}), ", vrijednost je tema iz prvog koraka. Po želji dodajte i tekst ", el("code",{text:"ADMIN_URL"}), " = ", el("code",{text:location.origin + "/admin/#ekran"}), "."),
+      el("li",{}, el("b",{text:"Settings → Trigger events → Add → Cron"}), ": svakih 10 minuta (", el("code",{text:"*/10 * * * *"}), ")."),
+      el("li",{text:"U roku od 10 minuta na telefon stiže poruka da su obavještenja uključena, a ovdje piše „Povezano”."})));
+  return el("div",{class:"card"},
+    el("div",{class:"pv-head"}, el("h3",{text:"Obavještenje na telefon",style:"margin:0"}), el("span",{class:"tag",id:"alertConn",text:"Provjeravam…"})),
+    el("p",{class:"hint",text:"Poruka preko aplikacije ntfy kad se ekran ne javi određeno vrijeme, i ponovo kad se vrati."}),
+    toggle("alerts.on","Javi mi kad se ekran ugasi"),
+    el("div",{class:"row2",style:"margin-top:6px"},
+      field("Javi nakon", after),
+      el("div",{class:"field quiet"}, el("label",{text:"Ne javljaj noću (od – do)"}), el("div",{class:"timebox"}, time("quietFrom"), el("span",{class:"dash",text:"–"}), time("quietTo")))),
+    el("p",{class:"hint",style:"margin:-6px 0 12px",text:"Ostavite noćnu pauzu praznu ako ekran radi i noću. Za vrijeme pauze ne stižu upozorenja."}),
+    setup);
+}
+
 let pvOrient = null, pvFrame = null, pvTimer = null;
 function buildEkranTab(){
   const seg = el("div",{class:"seg-group",role:"group","aria-label":"Raspored pregleda",id:"pvSeg"});
@@ -805,6 +971,7 @@ function buildEkranTab(){
       el("h3",{text:"Stanje"}),
       el("p",{class:"hint",text:"Ekran se javlja svakih 5 minuta. Ako se ne javi duže od 12 minuta, prikazuje se kao van mreže."}),
       el("div",{class:"scr-list",id:"scrList"})),
+    el("div",{id:"alertsSlot"}),
     el("div",{class:"card"},
       el("div",{class:"pv-head"}, el("h3",{text:"Pregled",style:"margin:0"}), seg),
       el("div",{class:"pv-frame land",id:"pvBox"}),
@@ -840,8 +1007,8 @@ window.addEventListener("message", e => { if (e.origin === location.origin && e.
 /* tabs; the choice is kept in the address (#obavijesti). Old section links still land in the right tab. */
 const TABS = [
   ["danas", "Danas", ["offsets","overrides","jumuah"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'],
-  ["obavijesti", "Obavijesti", ["notes","announcement"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>'],
-  ["ekran", "Ekran", [], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>'],
+  ["obavijesti", "Obavijesti", ["notes","archive","announcement"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>'],
+  ["ekran", "Ekran", ["alerts"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>'],
   ["podesavanja", "Podešavanja", ["masjidName","city","lat","lng","source","cityIndex","asrFactor","hijriAdjust","fajrAngle","ishaAngle","noteSeconds","showSeconds","night","colors"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>']
 ];
 const OLD_SECTIONS = {vremena:"danas", najava:"obavijesti", dzamija:"podesavanja", izvor:"podesavanja", nocni:"podesavanja", boje:"podesavanja"};
@@ -922,6 +1089,7 @@ async function setOrientation(v){
 async function saveDraft(base){
   const payload = normalize(draft);
   payload.notes = payload.notes.filter(n => (n.text||"").trim());
+  payload.archive = payload.archive.filter(n => (n.text||"").trim());
   $("btnSave").disabled = true; $("btnMine").disabled = true; setSaveState("Spremanje…");
   try{
     const v = await putSettings(payload, base);

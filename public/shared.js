@@ -21,9 +21,11 @@ const DEFAULTS = {
   offsets:{fajr:0,sunrise:0,dhuhr:0,asr:0,maghrib:0,isha:0},
   overrides:{},
   notes:[], noteSeconds:10,
+  archive:[],  // removed and reusable notes (admin only; the board ignores them)
   night:{on:false, afterIsha:30, beforeFajr:30, level:70},
   announcement:{text:"",on:false},
   hijriAdjust:0, showSeconds:true, orientation:"auto",
+  alerts:{on:true, afterMin:30, quietFrom:"", quietTo:""},  // offline alert on the phone (worker/alert.js)
   jumuah:{on:true},  // Fridays: podne becomes Džuma at 12:00 (zimsko) / 13:00 (ljetno)
   colors:{main:"#0F1C33", secondary:"#D4AF5F"}  // main = background, secondary = accent
 };
