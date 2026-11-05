@@ -89,10 +89,15 @@ You can skip this and enter everything in admin instead.
 
 ## Everyday use
 
-- Open `/admin/` on your laptop or phone, enter the PIN, make changes, and press **Sačuvaj promjene**. The layout switch at the top saves immediately.
-- Tick **Zapamti ovaj uređaj** on your own laptop so you aren't asked for the PIN every time.
-- Under **Boje**, pick the main color (background) and the secondary color (accent), or click one of the ready-made pairs. The card shades follow the main color automatically, a warning appears if a pair would be hard to read, and **Vrati zadane boje** returns to the original navy and gold. Saved with **Sačuvaj promjene** like everything else.
-- **Odjavi se** logs that device out.
+Open `/admin/` on your laptop or phone and enter the PIN. Tick **Zapamti ovaj uređaj** on your own devices so you aren't asked for the PIN every time. Admin has three parts (a menu on the left on a laptop, a tab bar at the bottom on a phone):
+
+- **Danas**: today's times as shown on the board. Tap a prayer to set a time for today only, or a permanent offset in minutes. Below are quick on/off switches for the full-screen announcement, Džuma on Fridays, and night mode.
+- **Obavijesti**: the notes that rotate at the bottom of the board (with optional dates and weekdays), and the full-screen announcement text.
+- **Podešavanja**: things set once: masjid name, prayer-time source and city, board layout, seconds and note timing, night mode details, colors, and **Odjavi se**. Each group shows its current value when closed.
+
+When something changes, a bar appears at the bottom with **Sačuvaj** and **Odbaci**. A dot on a tab marks unsaved changes there. The board layout (Podešavanja → Prikaz na ekranu) is the one setting that saves immediately.
+
+Colors: pick the main color (background) and the secondary color (accent), or click one of the ready-made pairs. Card shades follow the main color automatically, a warning appears if a pair would be hard to read, and **Vrati zadane boje** returns to the original navy and gold.
 
 ## Changing the PIN
 

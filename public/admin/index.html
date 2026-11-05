@@ -33,6 +33,8 @@
   --accent:#3FB8AF; --accent-ink:#0E1626; --warn:#E88B72; --ok:#3FB8AF;
 }
 *,*::before,*::after{box-sizing:inherit}
+/* <details> content does not inherit box-sizing through its slot, so set it directly */
+details *,details *::before,details *::after{box-sizing:border-box}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;height:100%;font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
 [hidden]{display:none !important}
@@ -64,80 +66,124 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* ---------- admin ---------- */
 .admin{min-height:100%;background:var(--bg)}
 .a-bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:3;background:var(--surface);border-bottom:1px solid var(--line)}
-.a-bar-in{max-width:980px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.a-bar h1{font-size:20px;margin:0;font-weight:900;flex:1}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:500}
+.a-bar-in{max-width:980px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:12px}
+.a-title{flex:1;min-width:0}
+.a-bar h1{font-size:20px;margin:0;font-weight:900;line-height:1.2}
+.a-title .sub{display:block;font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:500;min-height:40px}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
 .btn.primary[disabled]{opacity:.45;cursor:not-allowed}
 .btn:not(.primary)[disabled]{opacity:.5;cursor:not-allowed}
-.btn.small{padding:6px 10px;font-size:14px}
-.orient{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink-2)}
-.seg-group{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
-.seg{border:0;border-right:1px solid var(--line);background:transparent;padding:8px 12px;font-size:14px;cursor:pointer;color:var(--ink)}
-.seg:last-child{border-right:0}
-.seg.on{background:var(--accent);color:var(--accent-ink);font-weight:700}
-.seg[disabled]{cursor:not-allowed;opacity:.6}
-.a-bar-row2{max-width:980px;margin:0 auto;padding:0 20px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.save-state{font-size:14px;color:var(--ink-2);min-width:0}
-.a-actions{display:flex;align-items:center;gap:12px}
+.btn.small{padding:6px 10px;font-size:14px;min-height:36px}
+.btn.danger{color:var(--warn)}
+.m-show{display:none}
 .a-conflict{margin:0 max(20px, calc((100% - 940px) / 2)) 12px;padding:12px 14px;box-sizing:border-box;border:1px solid var(--warn);border-radius:12px;background:var(--bg);display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
 .a-conflict p{flex:1 1 320px;margin:0;font-size:14px;line-height:1.45;color:var(--ink)}
 .a-conflict-btns{display:flex;flex-wrap:wrap;gap:8px}
-@media (max-width:760px){
-  .a-conflict{margin:0 16px 10px;padding:10px 12px;gap:8px}
-  .a-conflict p{font-size:13px}
-  .a-conflict-btns{flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr}
-  .a-conflict-btns .btn{padding:8px 6px;font-size:14px}
-}
-.save-state.err{color:var(--warn)}
-/* settings: section menu on the left, the chosen section on the right */
-.a-layout{max-width:980px;margin:0 auto;padding:24px 20px 80px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;align-items:start}
-.a-nav{position:sticky;top:calc(var(--bar-h,120px) + 16px);display:grid;gap:2px}
-.a-nav button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;border:0;border-radius:10px;background:transparent;color:var(--ink-2);font-size:15px;font-weight:500;text-align:left;cursor:pointer}
+
+/* layout: three tabs. Laptop: menu on the left. Phone: tab bar at the bottom of the screen. */
+.a-layout{max-width:980px;margin:0 auto;padding:24px 20px 120px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;align-items:start}
+.a-nav{position:sticky;top:calc(var(--bar-h,72px) + 16px);display:grid;gap:2px}
+.a-nav button{position:relative;display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;border:0;border-radius:10px;background:transparent;color:var(--ink-2);font-size:15px;font-weight:500;text-align:left;cursor:pointer}
+.a-nav button svg{width:20px;height:20px;flex-shrink:0}
 .a-nav button:hover{background:var(--surface);color:var(--ink)}
 .a-nav button[aria-current="true"]{background:var(--line);color:var(--ink);font-weight:700}
-.a-nav .dot-unsaved{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.a-nav .dot-unsaved{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-left:auto}
 .a-main{min-width:0}
-.a-sec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
-.a-sec h2{font-size:18px;margin:0 0 4px}
-.a-sec .hint{font-size:14px;color:var(--ink-2);margin:0 0 16px;line-height:1.45}
-.field{display:grid;gap:6px;margin-bottom:14px}
+.tab-head{margin:0 0 14px}
+.tab-head h2{font-size:22px;margin:0;font-weight:900}
+.tab-head p{margin:2px 0 0;color:var(--ink-2);font-size:14px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:14px}
+.card > h3{font-size:16px;margin:0 0 2px}
+.hint{font-size:14px;color:var(--ink-2);margin:0 0 14px;line-height:1.45}
+.field{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-bottom:14px}
 .field label{font-size:14px;font-weight:500}
-.field input[type=text],.field input[type=number],.field input[type=time],.field select,.field textarea{
-  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
-.field textarea{min-height:80px;resize:vertical}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ptable{width:100%;border-collapse:collapse;font-size:15px}
-.ptable-wrap{overflow-x:auto}
-.ptable th{text-align:left;font-weight:500;color:var(--ink-2);font-size:13px;padding:6px 8px;border-bottom:1px solid var(--line)}
-.ptable td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
-.ptable input{width:84px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
-.ptable input[type=time]{width:110px}
-.ptable .calc{font-variant-numeric:tabular-nums;color:var(--ink-2)}
-.ptable .final{font-variant-numeric:tabular-nums;font-weight:700}
-.ptable .ar{font-family:var(--arabic);font-size:18px;color:var(--ink-2);margin-left:6px}
+.field input[type=text],.field input[type=number],.field input[type=time],.field input[type=date],.field select,.field textarea,.inp{
+  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);min-height:44px}
+.field textarea{min-height:90px;resize:vertical;line-height:1.4}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
 input[type=range]{flex:1;accent-color:var(--accent)}
-.check{display:flex;align-items:center;gap:10px;font-size:15px;margin-bottom:12px}
-.check input{width:20px;height:20px;accent-color:var(--accent)}
-.notes{list-style:none;margin:0 0 12px;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
-.notes li{display:block}
-.notes textarea{flex:1;min-height:44px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);resize:vertical}
-.notes .ctl{display:flex;gap:4px}
-.note-item{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px}
-.note-row{display:flex;gap:8px;align-items:flex-start}
-.note-sched{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:14px;color:var(--ink-2)}
-.note-sched input[type=date]{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
-.days{display:inline-flex;gap:4px}
-.day{width:34px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer;font-size:13px;font-weight:700;color:var(--ink-2)}
+
+/* on/off switches: the whole row is the tap target */
+.sw-row{display:flex;align-items:center;gap:14px;padding:13px 0;border-top:1px solid var(--line);cursor:pointer}
+.sw-row.first,.card > h3 + .hint + .sw-row,.card > .sw-row:first-child{border-top:0}
+.sw-row .txt{flex:1;min-width:0;display:grid;gap:2px}
+.sw-row .t{font-weight:700;font-size:16px}
+.sw-row .d{font-size:13px;color:var(--ink-2);line-height:1.4;overflow-wrap:anywhere}
+.switch{appearance:none;-webkit-appearance:none;flex:0 0 auto;width:50px;height:30px;margin:0;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:background .15s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+.switch:checked{background:var(--accent)}
+.switch:checked::after{transform:translateX(20px)}
+
+/* today's prayer times: one row per prayer, tap to change it */
+.plist{margin:0;padding:0}
+.prow{border-top:1px solid var(--line)}
+.prow:first-child{border-top:0}
+.prow > summary{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 2px;cursor:pointer;list-style:none}
+.prow > summary::-webkit-details-marker{display:none}
+.prow .nm{flex:1;min-width:0}
+.prow .nm b{font-size:17px}
+.prow .nm .ar{font-family:var(--arabic);font-size:19px;color:var(--ink-2);margin-left:8px}
+.prow .sub{display:block;font-size:13px;color:var(--ink-2)}
+.prow .sub .mark{color:var(--accent);font-weight:700}
+.prow .tm{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.prow.minor .tm{font-size:21px;color:var(--ink-2)}
+.prow.next .tm{color:var(--accent)}
+.chev{width:18px;height:18px;color:var(--ink-2);flex-shrink:0;transition:transform .15s}
+details[open] > summary .chev{transform:rotate(180deg)}
+.pedit{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:2px 2px 16px}
+.pedit .lbl{display:block;font-size:13px;font-weight:500;color:var(--ink-2);margin-bottom:6px}
+.pedit .note{grid-column:1/-1;margin:0;font-size:13px;color:var(--ink-2);line-height:1.4}
+.timebox{display:flex;gap:6px}
+.timebox .inp{min-width:0;flex:1 1 auto;width:0}
+.timebox .btn{flex:0 0 44px;padding:0}
+.stepper{display:flex}
+.stepper button{flex:0 0 42px;min-height:44px;border:1px solid var(--line);background:var(--surface);font-size:20px;cursor:pointer;color:var(--ink)}
+.stepper button:first-child{border-radius:10px 0 0 10px}
+.stepper button:last-child{border-radius:0 10px 10px 0}
+.stepper input{flex:1 1 auto;width:0;min-width:36px;border:1px solid var(--line);border-left:0;border-right:0;background:var(--bg);text-align:center;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+
+/* notes */
+.notes{list-style:none;margin:0 0 12px;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.notes li,.note-item > *{min-width:0}
+.note-item{display:grid;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px}
+.note-item textarea{width:100%;min-height:72px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);resize:vertical;line-height:1.4}
+.note-dates{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.note-dates > div{min-width:0}
+.inp,.field input,.field select{min-width:0;max-width:100%}
+input[type=date].inp{display:block}
+.note-dates label,.note-days-lbl{display:block;font-size:13px;font-weight:500;color:var(--ink-2);margin-bottom:6px}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.day{height:42px;border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:pointer;font-size:14px;font-weight:700;color:var(--ink-2)}
 .day.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--ink-2)}
+.note-foot{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.note-foot .ctl{display:flex;gap:6px;margin-left:auto}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--ink-2)}
 .tag.live{border-color:var(--accent);color:var(--accent)}
 .tag.full{color:var(--ink)}
 .tag.warn{border-color:var(--warn);color:var(--warn)}
+.add-btn{width:100%;min-height:50px;border:1.5px dashed var(--line);background:transparent;border-radius:12px;font-weight:700;color:var(--accent);cursor:pointer}
+.empty{color:var(--ink-2);font-size:15px;margin:0 0 12px}
+
+/* settings: collapsible groups, each showing its current value when closed */
+.grp{background:var(--surface);border:1px solid var(--line);border-radius:16px;margin-bottom:10px}
+.grp > summary{display:flex;align-items:center;gap:12px;padding:15px 18px;cursor:pointer;list-style:none;min-height:60px}
+.grp > summary::-webkit-details-marker{display:none}
+.grp .gt{flex:1;min-width:0;display:grid;gap:1px}
+.grp .gt b{font-size:16px}
+.grp .gt span{font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grp-body{padding:0 18px 18px}
+.seg-group{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+.seg{flex:1 1 0;min-width:0;border:0;border-right:1px solid var(--line);background:transparent;padding:10px 4px;font-size:14px;cursor:pointer;color:var(--ink);min-height:44px}
+.seg:last-child{border-right:0}
+.seg.on{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.seg[disabled]{cursor:not-allowed;opacity:.6}
 .colors{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:start}
 .color-field{display:flex;gap:8px;align-items:center}
-.color-field input[type=color]{width:52px;height:42px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:pointer}
-.color-field .hex{width:110px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-family:ui-monospace,Consolas,monospace;text-transform:uppercase}
+.color-field input[type=color]{width:52px;height:44px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:pointer}
+.color-field .hex{width:110px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-family:ui-monospace,Consolas,monospace;text-transform:uppercase}
 .presets{display:flex;flex-wrap:wrap;gap:8px}
 .preset{display:inline-flex;align-items:center;gap:8px}
 .preset .sw{width:30px;height:18px;border-radius:5px;border:1px solid var(--line)}
@@ -150,32 +196,40 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 .cprev .r .t{font-size:22px;font-weight:700}
 .cprev .r.cur{background:var(--c-surface-2);box-shadow:inset 3px 0 0 #49B9AE}
 .cprev .r.next{background:var(--c-accent);color:var(--c-on-accent)}
-.empty{color:var(--ink-2);font-size:15px;margin:0 0 12px}
-@media (max-width:760px){.row2{grid-template-columns:1fr}.colors{grid-template-columns:1fr}}
-/* phones: compact top bar. Title and save status share a row, the three buttons split the next
-   row (shorter labels below 480px), and the layout switch spans the full width below its caption.
-   Note text boxes take the full width, with their buttons underneath. */
+
+/* save bar: appears at the bottom only when there is something to save or report */
+.savebar{position:fixed;z-index:6;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(940px,calc(100% - 32px));display:flex;align-items:center;gap:8px;padding:8px 8px 8px 16px;border-radius:14px;background:var(--surface);border:1px solid var(--accent);box-shadow:0 8px 28px rgba(10,20,40,.22)}
+.save-state{flex:1;min-width:0;font-size:14px;font-weight:500;line-height:1.35;color:var(--ink)}
+.save-state.err{color:var(--warn)}
+.savebar .btn{min-height:44px}
+
 @media (max-width:760px){
-  .a-bar-in{padding:10px 16px;gap:8px}
-  .a-bar h1{flex:0 0 auto;font-size:17px;white-space:nowrap}
-  .save-state{flex:1 1 0;font-size:13px;text-align:right}
-  .a-actions{flex:1 1 100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-  .a-actions .btn{padding:8px 6px;font-size:14px;white-space:nowrap}
-  .a-bar-row2{padding:0 16px 10px}
-  .a-layout{grid-template-columns:minmax(0,1fr);gap:12px;padding:12px 16px 80px}
-  .a-nav{position:static;display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
-  .a-nav button{width:auto;flex:0 0 auto;padding:8px 12px;font-size:14px;white-space:nowrap;border:1px solid var(--line)}
-  .a-nav button[aria-current="true"]{border-color:var(--accent)}
-  .orient{flex:1 1 100%;flex-direction:column;align-items:stretch;gap:4px;font-size:12px}
-  .seg-group{display:flex}
-  .seg{flex:1 1 0;min-width:0;padding:8px 2px;font-size:13px;white-space:nowrap}
-  .note-row{flex-wrap:wrap}
-  .notes textarea{flex:1 1 100%;min-width:0}
-  .note-row .ctl{margin-left:auto}
+  .a-bar-in{padding:10px 16px}
+  .a-bar h1{font-size:18px}
+  .a-conflict{margin:0 16px 10px;padding:10px 12px;gap:8px}
+  .a-conflict p{font-size:13px}
+  .a-conflict-btns{flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr}
+  .a-conflict-btns .btn{padding:8px 6px;font-size:14px}
+  .a-layout{grid-template-columns:minmax(0,1fr);gap:0;padding:16px 12px calc(150px + env(safe-area-inset-bottom,0px))}
+  .a-nav{position:fixed;z-index:5;left:0;right:0;bottom:0;top:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line)}
+  .a-nav button{flex-direction:column;justify-content:center;gap:3px;min-height:56px;padding:6px 2px;font-size:12px;text-align:center;border-radius:12px}
+  .a-nav button svg{width:24px;height:24px}
+  .a-nav button[aria-current="true"]{background:transparent;color:var(--accent)}
+  .a-nav button:hover{background:transparent}
+  .a-nav .dot-unsaved{position:absolute;top:8px;left:calc(50% + 12px);margin:0}
+  .card{padding:14px 14px;border-radius:14px}
+  .grp > summary{padding:14px}
+  .grp-body{padding:0 14px 16px}
+  .savebar{width:calc(100% - 24px);bottom:calc(72px + env(safe-area-inset-bottom,0px));padding:8px 8px 8px 14px}
+  .savebar .save-state{font-size:13px}
+  .colors{grid-template-columns:1fr}
+  .seg{font-size:13px;padding:10px 2px}
+  .m-hide{display:none}
+  .m-show{display:inline}
 }
-@media (max-width:480px){.m-hide{display:none}}
-@media (max-width:340px){.seg{font-size:12px}}
-@media (prefers-reduced-motion:reduce){.n-text,.d-corner,.dots span,.d-night{transition:none}}
+@media (max-width:480px){.pedit{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:380px){.row2{grid-template-columns:1fr}.prow .nm .ar{display:none}}
+@media (prefers-reduced-motion:reduce){.switch,.switch::after,.chev{transition:none}}
 </style>
 </head>
 <body>
@@ -196,16 +250,8 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 
 <section id="admin" class="admin" hidden>
   <div class="a-bar"><div class="a-bar-in">
-    <h1>Vaktija · postavke</h1>
-    <span class="save-state" id="saveState" aria-live="polite"></span>
-    <div class="a-actions">
-      <button class="btn" id="btnLogout" type="button">Odjavi se</button>
-      <button class="btn" id="btnPreview" type="button">Pogledaj<span class="m-hide"> prikaz</span></button>
-      <button class="btn primary" id="btnSave" type="button" disabled>Sačuvaj<span class="m-hide"> promjene</span></button>
-    </div>
-  </div>
-  <div class="a-bar-row2">
-    <div class="orient"><span id="orientLabel">Raspored ekrana</span><div class="seg-group" id="orientSwitch" role="group" aria-labelledby="orientLabel"></div></div>
+    <div class="a-title"><h1>Vaktija</h1><span class="sub" id="aSub"></span></div>
+    <button class="btn" id="btnPreview" type="button"><span class="m-hide">Pogledaj prikaz</span><span class="m-show">Prikaz</span></button>
   </div>
   <div class="a-conflict" id="conflictBar" role="alert" hidden>
     <p id="conflictMsg"></p>
@@ -217,6 +263,11 @@ input[type=range]{flex:1;accent-color:var(--accent)}
   <div class="a-layout">
     <nav class="a-nav" id="aNav" aria-label="Dijelovi postavki"></nav>
     <main class="a-main" id="aMain"></main>
+  </div>
+  <div class="savebar" id="saveBar" hidden>
+    <span class="save-state" id="saveState" aria-live="polite"></span>
+    <button class="btn" id="btnDiscard" type="button">Odbaci</button>
+    <button class="btn primary" id="btnSave" type="button" disabled>Sačuvaj</button>
   </div>
 </section>
 
@@ -283,10 +334,10 @@ async function tryUnlock(){
 }
 $("btnUnlock").onclick = tryUnlock;
 $("pinEntry").addEventListener("keydown", e => { if (e.key === "Enter") tryUnlock(); });
-$("btnLogout").onclick = () => {
+function logout(){
   if (dirty && !confirm("Imate nesačuvane promjene. Odjaviti se svejedno?")) return;
-  dirty = false; hideConflict(); forgetPin(); showLock();
-};
+  dirty = false; syncSaveBar(); hideConflict(); forgetPin(); showLock();
+}
 $("btnPreview").onclick = () => window.open("/", "_blank");
 
 /* ---------------- admin ---------------- */
@@ -294,12 +345,28 @@ function setDirty(v){
   dirty = v;
   $("btnSave").disabled = !v;
   if (v) setSaveState("Nesačuvane promjene");
+  else syncSaveBar();
   updateNavDots();
 }
-function setSaveState(t, err){ const s = $("saveState"); s.textContent = t; s.classList.toggle("err", !!err); }
+/* the save bar shows while there are unsaved changes, and briefly for a result message */
+let saveMsgUntil = 0, saveMsgTimer = null;
+function syncSaveBar(){
+  const msg = Date.now() < saveMsgUntil;
+  $("saveBar").hidden = !dirty && !msg;
+  $("btnSave").hidden = $("btnDiscard").hidden = !dirty;
+}
+function setSaveState(t, err){
+  const s = $("saveState"); s.textContent = t; s.classList.toggle("err", !!err);
+  clearTimeout(saveMsgTimer);
+  const ms = err ? 9000 : 4000;
+  saveMsgUntil = Date.now() + ms;
+  saveMsgTimer = setTimeout(syncSaveBar, ms + 50);
+  syncSaveBar();
+}
 function el(tag, attrs, ...kids){
   const e = document.createElement(tag);
   for (const [k,v] of Object.entries(attrs||{})){
+    if (v == null) continue;
     if (k === "class") e.className = v; else if (k === "text") e.textContent = v;
     else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
   }
@@ -368,35 +435,173 @@ const COLOR_PRESETS = [
   ["Teget i srebrna", "#0F1C33", "#C9D3E0"]
 ];
 
-let tableBody = null, cityInput = null;
+const CHEV = '<svg class="chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8l5 5 5-5"/></svg>';
+const svg = html => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; };
+const signed = n => (n > 0 ? "+" : "") + n;
+
+let timeRows = [], cityInput = null, checkSync = {}, liveTexts = [];
+// keeps today's prayer list (and anything else that shows a current value) in step with the draft
 function refreshTable(){
-  if (!tableBody) return;
   const today = new Date(), t = dayTimes(today, draft);
-  for (const tr of tableBody.children){
-    const k = tr.dataset.key;
-    tr.querySelector(".calc").textContent = minToHHMM(t[k].raw) + (t[k].official ? "" : " (izračun)");
-    tr.querySelector(".final").textContent = minToHHMM(t[k].min) + (t[k].manual ? " ✎" : (t[k].jumuah ? " (džuma)" : ""));
-    const n = prayerName(k, today, draft);
-    tr.querySelector(".pname").replaceChildren(n.bs, el("span",{class:"ar",text:n.ar}));
+  const next = KEYS.find(k => t[k].date > today);
+  for (const r of timeRows){
+    const k = r.k, n = prayerName(k, today, draft), x = t[k];
+    r.name.textContent = n.bs; r.ar.textContent = n.ar;
+    r.time.textContent = minToHHMM(x.min);
+    const base = (x.official ? "zvanično " : "izračun ") + minToHHMM(x.raw), off = +draft.offsets[k] || 0;
+    const mark = x.manual ? "ručno danas" : x.jumuah ? "džuma" : off ? `pomak ${signed(off)} min` : "";
+    r.sub.replaceChildren(...(mark ? [el("span",{class:"mark",text:mark}), " · " + base] : [base]));
+    r.row.classList.toggle("next", k === next);
+    if (r.offNote) r.offNote.hidden = !x.jumuah;
   }
+  $("aSub").textContent = [draft.masjidName, draft.city].filter(x => (x||"").trim()).join(" · ");
+  liveTexts.forEach(f => f());
 }
+// on/off switch bound to a setting; the same setting may appear in two places and both stay in step
+function toggle(path, title, desc){
+  const i = el("input",{type:"checkbox",class:"switch",role:"switch"});
+  i.checked = !!getPath(draft, path);
+  (checkSync[path] ||= []).push(i);
+  i.addEventListener("change", () => { setPath(draft, path, i.checked); checkSync[path].forEach(x => { x.checked = i.checked; }); setDirty(true); refreshTable(); });
+  const d = desc == null ? null : el("span",{class:"d"});
+  if (typeof desc === "function"){ const upd = () => { d.textContent = desc(); }; liveTexts.push(upd); upd(); }
+  else if (d) d.textContent = desc;
+  return el("label",{class:"sw-row"}, el("span",{class:"txt"}, el("span",{class:"t",text:title}), d), i);
+}
+// collapsible settings group; its closed row shows the current value
+function group(id, title, summary, ...body){
+  const s = el("span");
+  const upd = () => { s.textContent = summary(); }; liveTexts.push(upd); upd();
+  const d = el("details",{class:"grp","data-grp":id}, el("summary",{}, el("span",{class:"gt"}, el("b",{text:title}), s), svg(CHEV)), el("div",{class:"grp-body"}, ...body));
+  if (openGroups.has(id)) d.open = true;
+  d.addEventListener("toggle", () => { if (d.open) openGroups.add(id); else openGroups.delete(id); });
+  return d;
+}
+let openGroups = new Set(), openRows = new Set();
+const shortText = (t, n=70) => { t = (t||"").trim().replace(/\s+/g," "); return t.length > n ? t.slice(0, n-1) + "…" : t; };
+
 function renderAdmin(){
   if (!dirty) draft = clone(config);
-  renderOrientSwitch();
+  timeRows = []; checkSync = {}; liveTexts = [];
+  $("aSub").textContent = [draft.masjidName, draft.city].filter(x => (x||"").trim()).join(" · ");
   const main = $("aMain"); main.textContent = "";
+  const today = new Date(), todayKey = dateKey(today);
+  draft.overrides = draft.overrides || {};
+  for (const k of Object.keys(draft.overrides)) if (k < todayKey) delete draft.overrides[k]; // past days
 
-  // Masjid
-  main.append(el("section",{class:"a-sec","data-sec":"dzamija"},
-    el("h2",{text:"Džamija"}),
-    el("p",{class:"hint",text:"Naziv i mjesto prikazani u zaglavlju ekrana."}),
-    field("Naziv džamije", textInput("masjidName")),
-    field("Mjesto (prikaz u zaglavlju)", cityInput = textInput("city")),
-    el("div",{class:"row2"},
-      field("Geografska širina", textInput("lat","number",{step:"0.0001"})),
-      field("Geografska dužina", textInput("lng","number",{step:"0.0001"})))
+  /* ---------- Danas ---------- */
+  const h = hijri(today, +draft.hijriAdjust);
+  const plist = el("div",{class:"plist"});
+  for (const k of KEYS){
+    const ov = el("input",{type:"time",class:"inp","aria-label":`Ručno vrijeme danas za ${NAMES[k].bs}`});
+    ov.value = (draft.overrides[todayKey]||{})[k] || "";
+    const setOv = v => {
+      const day = draft.overrides[todayKey] = draft.overrides[todayKey] || {};
+      if (v) day[k] = v; else delete day[k];
+      if (!Object.keys(day).length) delete draft.overrides[todayKey];
+      setDirty(true); refreshTable();
+    };
+    ov.addEventListener("input", () => setOv(ov.value));
+    const clr = el("button",{class:"btn",type:"button","aria-label":"Ukloni ručno vrijeme",text:"✕",onclick:()=>{ ov.value = ""; setOv(""); }});
+    const off = textInput("offsets."+k,"number",{step:"1",inputmode:"numeric","aria-label":`Pomak svaki dan za ${NAMES[k].bs} (minuta)`});
+    const bump = d => { off.value = String((+off.value||0) + d); off.dispatchEvent(new Event("input")); };
+    const name = el("b"), ar = el("span",{class:"ar"}), sub = el("span",{class:"sub"}), time = el("span",{class:"tm"});
+    const offNote = k === "dhuhr" ? el("p",{class:"note",text:"Petkom je džuma u fiksno vrijeme, pa se pomak tada ne primjenjuje. Ručno vrijeme i dalje ima prednost."}) : null;
+    const row = el("details",{class:"prow" + (k === "sunrise" ? " minor" : "")},
+      el("summary",{}, el("span",{class:"nm"}, name, ar, sub), time, svg(CHEV)),
+      el("div",{class:"pedit"},
+        el("div",{}, el("span",{class:"lbl",text:"Samo danas"}), el("div",{class:"timebox"}, ov, clr)),
+        el("div",{}, el("span",{class:"lbl",text:"Pomak svaki dan (min)"}), el("div",{class:"stepper"},
+          el("button",{type:"button","aria-label":"Minuta manje",text:"−",onclick:()=>bump(-1)}), off,
+          el("button",{type:"button","aria-label":"Minuta više",text:"+",onclick:()=>bump(1)}))),
+        offNote));
+    if (openRows.has(k)) row.open = true;
+    row.addEventListener("toggle", () => { if (row.open) openRows.add(k); else openRows.delete(k); });
+    plist.append(row);
+    timeRows.push({k, row, name, ar, sub, time, offNote});
+  }
+  main.append(el("section",{"data-tab":"danas"},
+    el("div",{class:"tab-head"}, el("h2",{text:"Danas"}),
+      el("p",{text:gregorian(today) + (h ? ` · ${h.day}. ${H_MONTHS[h.mon-1]} ${h.yr}. h.` : "")})),
+    el("div",{class:"card"},
+      el("h3",{text:"Vremena na ekranu"}),
+      el("p",{class:"hint",text:"Dodirnite namaz da upišete vrijeme samo za danas ili stalni pomak u minutama."}),
+      plist),
+    el("div",{class:"card"},
+      el("h3",{text:"Brzo uključi / isključi"}),
+      el("p",{class:"hint",text:"Promjene se vide na ekranu kad ih sačuvate."}),
+      toggle("announcement.on","Najava preko cijelog ekrana", () => (draft.announcement.text||"").trim() ? shortText(draft.announcement.text) : "Nema teksta. Upišite ga pod Obavijesti."),
+      toggle("jumuah.on","Džuma petkom","Petkom podne kao Džuma u 12:00 (zimsko) ili 13:00 (ljetno vrijeme)."),
+      toggle("night.on","Noćni način","Ekran se zatamni između jacije i zore."))
   ));
 
-  // Calculation
+  /* ---------- Obavijesti ---------- */
+  const annText = el("textarea",{"aria-label":"Tekst najave"}); annText.value = draft.announcement.text || "";
+  annText.addEventListener("input", () => { draft.announcement.text = annText.value; setDirty(true); refreshTable(); });
+  const DAY_SHORT = [["P",1,"ponedjeljak"],["U",2,"utorak"],["S",3,"srijeda"],["Č",4,"četvrtak"],["P",5,"petak"],["S",6,"subota"],["N",0,"nedjelja"]];
+  const list = el("ul",{class:"notes"});
+  const drawNotes = () => {
+    list.textContent = ""; noteLinesUpdaters = [];
+    if (!draft.notes.length) list.append(el("p",{class:"empty",text:"Nema obavijesti. Dodajte prvu i ona će se prikazati na dnu ekrana."}));
+    draft.notes.forEach((n, i) => {
+      n.days = Array.isArray(n.days) ? n.days : [];
+      const ta = el("textarea",{"aria-label":`Obavijest ${i+1}`,placeholder:"Tekst obavijesti"}); ta.value = n.text || "";
+      const status = el("span",{class:"tag"});
+      const setStatus = () => { const live = noteActive(n, new Date()); status.textContent = live ? "Prikazuje se danas" : ((n.to && dateKey(new Date()) > n.to) ? "Isteklo" : "Danas se ne prikazuje"); status.classList.toggle("live", live); };
+      const lines = el("span",{class:"tag"});
+      const setLines = () => {
+        const k = noteLines(ta.value), over = k > NOTE_MAX_LINES;
+        lines.textContent = over ? `Preduga: ${k} ${redova(k)}, vide se samo ${NOTE_MAX_LINES}. Skratite je.` : `${k}/${NOTE_MAX_LINES} reda`;
+        lines.classList.toggle("warn", over);
+        lines.classList.toggle("full", k === NOTE_MAX_LINES);
+      };
+      ta.addEventListener("input", () => { limitNote(ta, n.text || ""); if (ta.value === (n.text || "")){ setLines(); return; } n.text = ta.value; setDirty(true); setStatus(); setLines(); });
+      noteLinesUpdaters.push(setLines);
+      const mv = (d) => { const j = i+d; if (j<0 || j>=draft.notes.length) return; [draft.notes[i],draft.notes[j]] = [draft.notes[j],draft.notes[i]]; setDirty(true); drawNotes(); };
+      const fid = "nf"+i, tid = "nt"+i;
+      const from = el("input",{type:"date",class:"inp",id:fid}); from.value = n.from || "";
+      const to = el("input",{type:"date",class:"inp",id:tid}); to.value = n.to || "";
+      from.addEventListener("input", () => { n.from = from.value; setDirty(true); setStatus(); });
+      to.addEventListener("input", () => { n.to = to.value; setDirty(true); setStatus(); });
+      const days = el("div",{class:"days",role:"group","aria-label":"Samo ovim danima"});
+      for (const [lbl, d, full] of DAY_SHORT){
+        const btn = el("button",{type:"button",class:"day"+(n.days.includes(d)?" on":""),title:full,"aria-label":full,"aria-pressed":String(n.days.includes(d)),text:lbl});
+        btn.addEventListener("click", () => {
+          const k = n.days.indexOf(d); if (k >= 0) n.days.splice(k,1); else n.days.push(d);
+          btn.classList.toggle("on"); btn.setAttribute("aria-pressed", String(n.days.includes(d))); setDirty(true); setStatus();
+        });
+        days.append(btn);
+      }
+      setStatus(); setLines();
+      list.append(el("li",{}, el("div",{class:"note-item"},
+        ta,
+        el("div",{class:"note-dates"},
+          el("div",{}, el("label",{for:fid,text:"Prikazuj od"}), from),
+          el("div",{}, el("label",{for:tid,text:"do"}), to)),
+        el("div",{}, el("span",{class:"note-days-lbl",text:"Samo ovim danima (neobavezno)"}), days),
+        el("div",{class:"note-foot"}, status, lines, el("div",{class:"ctl"},
+          el("button",{class:"btn small",type:"button","aria-label":"Pomjeri gore",text:"↑",disabled:i===0?"":null,onclick:()=>mv(-1)}),
+          el("button",{class:"btn small",type:"button","aria-label":"Pomjeri dole",text:"↓",onclick:()=>mv(1)}),
+          el("button",{class:"btn small danger",type:"button",text:"Ukloni",onclick:()=>{ if ((n.text||"").trim() && !confirm("Ukloniti ovu obavijest?")) return; draft.notes.splice(i,1); setDirty(true); drawNotes(); }}))))));
+      if (i === draft.notes.length - 1) list.lastChild.querySelector('[aria-label="Pomjeri dole"]').disabled = true;
+    });
+  };
+  drawNotes();
+  main.append(el("section",{"data-tab":"obavijesti"},
+    el("div",{class:"tab-head"}, el("h2",{text:"Obavijesti"}), el("p",{text:"Poruke na dnu ekrana i najava preko cijelog ekrana."})),
+    el("div",{class:"card"},
+      el("h3",{text:"Obavijesti na dnu ekrana"}),
+      el("p",{class:"hint",text:"Smjenjuju se na dnu ekrana, najviše 3 reda svaka. Bez datuma i dana prikazuju se svaki dan."}),
+      list,
+      el("button",{class:"add-btn",type:"button",text:"+ Dodaj obavijest",onclick:()=>{ draft.notes.push({id:Date.now().toString(36),text:"",from:"",to:"",days:[]}); setDirty(true); drawNotes(); list.querySelector("li:last-child textarea")?.focus(); }})),
+    el("div",{class:"card"},
+      el("h3",{text:"Najava preko cijelog ekrana"}),
+      el("p",{class:"hint",text:"Prekriva cijeli prikaz dok je uključena, npr. za promjenu termina ili važnu vijest. Isključite je kad više nije potrebna."}),
+      field("Tekst najave", annText),
+      toggle("announcement.on","Prikaži najavu na ekranu"))
+  ));
+
+  /* ---------- Podešavanja ---------- */
   const asrSel = el("select",{});
   [["1","Standardno (šafijski, maliki, hanbeli)"],["2","Hanefijski"]].forEach(([v,t]) => asrSel.append(el("option",{value:v,text:t})));
   asrSel.value = String(draft.asrFactor || 1);
@@ -414,145 +619,24 @@ function renderAdmin(){
     if (!draft.city || draft.city === prevName){ draft.city = OFFICIAL.cities[draft.cityIndex]; if (cityInput) cityInput.value = draft.city; }
     setDirty(true); refreshTable();
   });
-  const cityField = field("Grad", citySel);
+  const cityField = field("Grad (takvim)", citySel);
   const syncCalc = () => { calcBox.hidden = srcSel.value !== "calc"; cityField.hidden = srcSel.value === "calc"; };
   srcSel.addEventListener("change", () => { draft.source = srcSel.value; syncCalc(); setDirty(true); refreshTable(); });
-  main.append(el("section",{class:"a-sec","data-sec":"izvor"},
-    el("h2",{text:"Izvor vremena"}),
-    el("p",{class:"hint",text:`Zvanična vaktija koristi takvim sa vaktija.ba za ${OFFICIAL.cities.length} lokacija u BiH i Sandžaku, za svaku godinu, uz automatsko ljetno i zimsko računanje vremena.`}),
-    field("Vremena namaza", srcSel),
-    cityField,
-    calcBox,
-    field("Pomak hidžretskog datuma (dani)", textInput("hijriAdjust","number",{step:"1",min:"-2",max:"2"}))
-  ));
-  calcBox.append(el("p",{class:"hint",text:"Uglovi sunca za zoru i jaciju i način računanja ikindije."}),
+  calcBox.append(
+    el("div",{class:"row2"},
+      field("Geografska širina", textInput("lat","number",{step:"0.0001"})),
+      field("Geografska dužina", textInput("lng","number",{step:"0.0001"}))),
     el("div",{class:"row2"},
       field("Ugao za zoru (°)", textInput("fajrAngle","number",{step:"0.1"})),
       field("Ugao za jaciju (°)", textInput("ishaAngle","number",{step:"0.1"}))),
     field("Ikindija", asrSel));
   syncCalc();
 
-  // Times table
-  const todayKey = dateKey(new Date());
-  draft.overrides = draft.overrides || {};
-  tableBody = el("tbody",{});
-  for (const k of KEYS){
-    const off = textInput("offsets."+k,"number",{step:"1","aria-label":`Pomak za ${NAMES[k].bs}`});
-    const ov = el("input",{type:"time","aria-label":`Ručno vrijeme za ${NAMES[k].bs}`});
-    ov.value = (draft.overrides[todayKey]||{})[k] || "";
-    ov.addEventListener("input", () => {
-      const day = draft.overrides[todayKey] = draft.overrides[todayKey] || {};
-      if (ov.value) day[k] = ov.value; else delete day[k];
-      if (!Object.keys(day).length) delete draft.overrides[todayKey];
-      setDirty(true); refreshTable();
-    });
-    tableBody.append(el("tr",{"data-key":k},
-      el("td",{class:"pname"}, NAMES[k].bs, el("span",{class:"ar",text:NAMES[k].ar})),
-      el("td",{class:"calc"}), el("td",{}, off), el("td",{}, ov), el("td",{class:"final"})));
-  }
-  // drop stale overrides from past days
-  for (const k of Object.keys(draft.overrides)) if (k < todayKey) delete draft.overrides[k];
-  const jOn = el("input",{type:"checkbox"}); jOn.checked = !!(draft.jumuah && draft.jumuah.on);
-  jOn.addEventListener("change", () => { draft.jumuah = Object.assign({}, draft.jumuah, {on:jOn.checked}); setDirty(true); refreshTable(); });
-  main.append(el("section",{class:"a-sec","data-sec":"vremena"},
-    el("h2",{text:"Današnja vremena"}),
-    el("p",{class:"hint",text:"Osnova je zvanična vaktija ili izračun. Pomak (min) vrijedi svaki dan. Ručno vrijeme vrijedi samo danas i ima prednost nad izračunom."}),
-    el("div",{class:"ptable-wrap"}, el("table",{class:"ptable"},
-      el("thead",{}, el("tr",{}, ...["Namaz","Osnova","Pomak (min)","Ručno danas","Na ekranu"].map(t=>el("th",{text:t})))),
-      tableBody)),
-    el("h2",{text:"Džuma",style:"margin-top:20px"}),
-    el("p",{class:"hint",text:"Petkom se podne na ekranu prikazuje kao Džuma (الجمعة) u 12:00 tokom zimskog i u 13:00 tokom ljetnog računanja vremena. Pomak za podne se tada ne primjenjuje, a ručno vrijeme za taj dan i dalje ima prednost."}),
-    el("label",{class:"check"}, jOn, "Prikaži džumu petkom")
-  ));
-  refreshTable();
-
-  // Notes
-  const DAY_SHORT = [["P",1,"ponedjeljak"],["U",2,"utorak"],["S",3,"srijeda"],["Č",4,"četvrtak"],["P",5,"petak"],["S",6,"subota"],["N",0,"nedjelja"]];
-  const list = el("ul",{class:"notes"});
-  const drawNotes = () => {
-    list.textContent = ""; noteLinesUpdaters = [];
-    if (!draft.notes.length) list.append(el("p",{class:"empty",text:"Nema obavijesti. Dodajte prvu i ona će se prikazati na dnu ekrana."}));
-    const now = new Date();
-    draft.notes.forEach((n, i) => {
-      n.days = Array.isArray(n.days) ? n.days : [];
-      const ta = el("textarea",{"aria-label":`Obavijest ${i+1}`}); ta.value = n.text || "";
-      const status = el("span",{class:"tag"});
-      const setStatus = () => { const live = noteActive(n, new Date()); status.textContent = live ? "Prikazuje se danas" : ((n.to && dateKey(new Date()) > n.to) ? "Isteklo" : "Danas se ne prikazuje"); status.classList.toggle("live", live); };
-      const lines = el("span",{class:"tag"});
-      const setLines = () => {
-        const k = noteLines(ta.value), over = k > NOTE_MAX_LINES;
-        lines.textContent = over ? `Preduga: ${k} ${redova(k)}, na ekranu se vide samo ${NOTE_MAX_LINES}. Skratite je.` : `${k}/${NOTE_MAX_LINES} reda na ekranu`;
-        lines.classList.toggle("warn", over);
-        lines.classList.toggle("full", k === NOTE_MAX_LINES);
-      };
-      ta.addEventListener("input", () => { limitNote(ta, n.text || ""); if (ta.value === (n.text || "")){ setLines(); return; } n.text = ta.value; setDirty(true); setStatus(); setLines(); });
-      noteLinesUpdaters.push(setLines);
-      const mv = (d) => { const j = i+d; if (j<0 || j>=draft.notes.length) return; [draft.notes[i],draft.notes[j]] = [draft.notes[j],draft.notes[i]]; setDirty(true); drawNotes(); };
-      const from = el("input",{type:"date","aria-label":"Prikazuj od"}); from.value = n.from || "";
-      const to = el("input",{type:"date","aria-label":"Prikazuj do"}); to.value = n.to || "";
-      from.addEventListener("input", () => { n.from = from.value; setDirty(true); setStatus(); });
-      to.addEventListener("input", () => { n.to = to.value; setDirty(true); setStatus(); });
-      const days = el("span",{class:"days",role:"group","aria-label":"Dani u sedmici"});
-      for (const [lbl, d, full] of DAY_SHORT){
-        const btn = el("button",{type:"button",class:"day"+(n.days.includes(d)?" on":""),title:full,"aria-label":full,"aria-pressed":String(n.days.includes(d)),text:lbl});
-        btn.addEventListener("click", () => {
-          const k = n.days.indexOf(d); if (k >= 0) n.days.splice(k,1); else n.days.push(d);
-          btn.classList.toggle("on"); btn.setAttribute("aria-pressed", String(n.days.includes(d))); setDirty(true); setStatus();
-        });
-        days.append(btn);
-      }
-      setStatus(); setLines();
-      list.append(el("li",{}, el("div",{class:"note-item"},
-        el("div",{class:"note-row"}, ta, el("div",{class:"ctl"},
-          el("button",{class:"btn small",type:"button","aria-label":"Pomjeri gore",text:"↑",onclick:()=>mv(-1)}),
-          el("button",{class:"btn small",type:"button","aria-label":"Pomjeri dole",text:"↓",onclick:()=>mv(1)}),
-          el("button",{class:"btn small",type:"button",text:"Ukloni",onclick:()=>{ draft.notes.splice(i,1); setDirty(true); drawNotes(); }}))),
-        el("div",{class:"note-sched"}, "Od", from, "do", to, days, status, lines))));
-    });
-  };
-  drawNotes();
-  main.append(el("section",{class:"a-sec","data-sec":"obavijesti"},
-    el("h2",{text:"Obavijesti"}),
-    el("p",{class:"hint",text:"Kratke poruke koje se smjenjuju na dnu ekrana, najviše 3 reda svaka. Datumi i dani su neobavezni: bez njih se obavijest prikazuje svaki dan. Ako odaberete dane, prikazuje se samo tim danima, npr. samo četvrtkom za ders."}),
-    list,
-    el("button",{class:"btn",type:"button",text:"Dodaj obavijest",onclick:()=>{ draft.notes.push({id:Date.now().toString(36),text:"",from:"",to:"",days:[]}); setDirty(true); drawNotes(); list.querySelector("li:last-child textarea")?.focus(); }}),
-    el("div",{style:"margin-top:16px;max-width:260px"}, field("Smjena svakih (sekundi)", textInput("noteSeconds","number",{step:"1",min:"4"})))
-  ));
-
-  // Night mode
-  const nOn = el("input",{type:"checkbox"}); nOn.checked = !!draft.night.on;
-  nOn.addEventListener("change", () => { draft.night.on = nOn.checked; setDirty(true); });
-  const lvl = el("input",{type:"range",min:"20",max:"90",step:"5"}); lvl.value = String(draft.night.level ?? 70);
+  const lvl = el("input",{type:"range",min:"20",max:"90",step:"5","aria-label":"Jačina zatamnjenja"}); lvl.value = String(draft.night.level ?? 70);
   const lvlOut = el("span",{text:`${lvl.value}%`});
-  lvl.addEventListener("input", () => { draft.night.level = +lvl.value; lvlOut.textContent = `${lvl.value}%`; setDirty(true); });
-  main.append(el("section",{class:"a-sec","data-sec":"nocni"},
-    el("h2",{text:"Noćni način"}),
-    el("p",{class:"hint",text:"Između jacije i zore ekran se zatamni, a vrijeme i dalje ostaje čitljivo."}),
-    el("label",{class:"check"}, nOn, "Zatamni ekran noću"),
-    el("div",{class:"row2"},
-      field("Počni (min nakon jacije)", textInput("night.afterIsha","number",{step:"5",min:"0"})),
-      field("Završi (min prije zore)", textInput("night.beforeFajr","number",{step:"5",min:"0"}))),
-    el("div",{class:"field"}, el("label",{text:"Jačina zatamnjenja"}), el("div",{style:"display:flex;gap:12px;align-items:center"}, lvl, lvlOut))
-  ));
+  lvl.addEventListener("input", () => { draft.night.level = +lvl.value; lvlOut.textContent = `${lvl.value}%`; setDirty(true); refreshTable(); });
 
-
-  // Announcement + display
-  const annOn = el("input",{type:"checkbox"}); annOn.checked = !!draft.announcement.on;
-  annOn.addEventListener("change", () => { draft.announcement.on = annOn.checked; setDirty(true); });
-  const annText = el("textarea",{}); annText.value = draft.announcement.text || "";
-  annText.addEventListener("input", () => { draft.announcement.text = annText.value; setDirty(true); });
-  const secOn = el("input",{type:"checkbox"}); secOn.checked = !!draft.showSeconds;
-  secOn.addEventListener("change", () => { draft.showSeconds = secOn.checked; setDirty(true); });
-  main.append(el("section",{class:"a-sec","data-sec":"najava"},
-    el("h2",{text:"Najava preko cijelog ekrana"}),
-    el("p",{class:"hint",text:"Prekriva cijeli prikaz dok je uključena, npr. za promjenu termina ili važnu vijest. Isključite je kad više nije potrebna."}),
-    field("Tekst najave", annText),
-    el("label",{class:"check"}, annOn, "Prikaži najavu na ekranu"),
-    el("h2",{text:"Prikaz",style:"margin-top:20px"}),
-    el("label",{class:"check"}, secOn, "Prikaži sekunde na satu")
-  ));
-
-  // Colors: main = background, secondary = accent
+  // colors: main = background, secondary = accent
   const preview = el("div",{class:"cprev","aria-label":"Pregled boja"},
     el("div",{class:"clock",text:"14:52"}),
     el("div",{class:"pill",text:"Ikindija za 0:53"}),
@@ -580,71 +664,83 @@ function renderAdmin(){
     const c = draft.colors;
     for (const [f, k] of [[mainF,"main"],[secF,"secondary"]]){ f.pick.value = c[k].toLowerCase(); if (f.hex !== typing) f.hex.value = c[k]; }
     applyPalette(preview, c);
-    const warns = colorWarnings(c);
-    warnBox.replaceChildren(...warns.map(w => el("p",{text:w})));
+    warnBox.replaceChildren(...colorWarnings(c).map(w => el("p",{text:w})));
     resetBtn.disabled = c.main === DEFAULTS.colors.main && c.secondary === DEFAULTS.colors.secondary;
     presetBtns.forEach(b => b.classList.toggle("on", b.dataset.colors === c.main + c.secondary));
   };
   const setColors = (c, typing) => {
     draft.colors = {main: c.main.toUpperCase(), secondary: c.secondary.toUpperCase()};
-    setDirty(true); showColors(typing);
+    setDirty(true); showColors(typing); refreshTable();
   };
   showColors();
-  main.append(el("section",{class:"a-sec","data-sec":"boje"},
-    el("h2",{text:"Boje"}),
-    el("p",{class:"hint",text:"Glavna boja je pozadina ekrana, a sporedna naglašava sljedeći namaz, okvir i odbrojavanje. Nijanse kartica se računaju same iz glavne boje. Ekran se mijenja kad sačuvate."}),
-    el("div",{class:"colors"},
-      el("div",{},
-        el("div",{class:"row2"}, mainF.row, secF.row),
-        el("div",{class:"field"}, el("label",{text:"Gotove kombinacije"}), el("div",{class:"presets"}, ...presetBtns)),
-        warnBox,
-        resetBtn),
-      preview)
+
+  orientBox = el("div",{class:"seg-group",role:"group","aria-label":"Raspored ekrana"});
+  const presetName = () => (COLOR_PRESETS.find(p => p[1] === draft.colors.main && p[2] === draft.colors.secondary) || ["Vlastite boje"])[0];
+  main.append(el("section",{"data-tab":"podesavanja"},
+    el("div",{class:"tab-head"}, el("h2",{text:"Podešavanja"}), el("p",{text:"Postavlja se jednom i rijetko mijenja."})),
+    group("dzamija","Džamija", () => [draft.masjidName, draft.city].filter(x => (x||"").trim()).join(" · ") || "Nije upisano",
+      field("Naziv džamije", textInput("masjidName")),
+      field("Mjesto (prikaz u zaglavlju)", cityInput = textInput("city"))),
+    group("izvor","Vremena namaza", () => draft.source === "calc" ? "Astronomski izračun" : `Zvanična vaktija · ${OFFICIAL.cities[draft.cityIndex] || ""}`,
+      el("p",{class:"hint",text:`Zvanična vaktija koristi takvim sa vaktija.ba za ${OFFICIAL.cities.length} lokacija u BiH i Sandžaku, uz automatsko ljetno i zimsko računanje vremena.`}),
+      field("Izvor", srcSel), cityField, calcBox,
+      field("Pomak hidžretskog datuma (dani)", textInput("hijriAdjust","number",{step:"1",min:"-2",max:"2"}))),
+    group("prikaz","Prikaz na ekranu", () => `Raspored: ${(ORIENTS.find(o => o[0] === (config.orientation||"auto")) || ORIENTS[0])[1].toLowerCase()} · obavijesti svakih ${draft.noteSeconds} s`,
+      el("div",{class:"field"}, el("label",{text:"Raspored ekrana"}), orientBox,
+        el("p",{class:"hint",style:"margin:0",text:"Raspored se sačuva odmah, bez dugmeta Sačuvaj."})),
+      field("Smjena obavijesti svakih (sekundi)", textInput("noteSeconds","number",{step:"1",min:"4",inputmode:"numeric"})),
+      toggle("showSeconds","Sekunde na satu")),
+    group("nocni","Noćni način", () => draft.night.on ? `Uključen · ${draft.night.afterIsha} min nakon jacije do ${draft.night.beforeFajr} min prije zore` : "Isključen",
+      toggle("night.on","Zatamni ekran noću","Vrijeme i dalje ostaje čitljivo."),
+      el("div",{class:"row2"},
+        field("Počni (min nakon jacije)", textInput("night.afterIsha","number",{step:"5",min:"0",inputmode:"numeric"})),
+        field("Završi (min prije zore)", textInput("night.beforeFajr","number",{step:"5",min:"0",inputmode:"numeric"}))),
+      el("div",{class:"field"}, el("label",{text:"Jačina zatamnjenja"}), el("div",{style:"display:flex;gap:12px;align-items:center"}, lvl, lvlOut))),
+    group("boje","Boje", presetName,
+      el("p",{class:"hint",text:"Glavna boja je pozadina ekrana, a sporedna naglašava sljedeći namaz, okvir i odbrojavanje. Nijanse kartica se računaju same iz glavne boje."}),
+      el("div",{class:"colors"},
+        el("div",{},
+          el("div",{class:"row2"}, mainF.row, secF.row),
+          el("div",{class:"field"}, el("label",{text:"Gotove kombinacije"}), el("div",{class:"presets"}, ...presetBtns)),
+          warnBox, resetBtn),
+        preview)),
+    group("uredjaj","Ovaj uređaj", () => "Odjava",
+      el("p",{class:"hint",text:"Odjava briše zapamćeni PIN sa ovog uređaja."}),
+      el("button",{class:"btn danger",type:"button",text:"Odjavi se",onclick:logout}))
   ));
 
+  renderOrientSwitch();
+  refreshTable();
   buildNav();
   $("btnSave").disabled = !dirty;
-  if (!dirty) setSaveState("Sve je sačuvano");
+  syncSaveBar();
 }
 
-/* section menu: one section shown at a time; the choice is kept in the address (#boje) */
-const SECTIONS = [
-  ["dzamija", "Džamija", ["masjidName","city","lat","lng"]],
-  ["izvor", "Izvor vremena", ["source","cityIndex","asrFactor","hijriAdjust","fajrAngle","ishaAngle"]],
-  ["vremena", "Današnja vremena", ["offsets","overrides","jumuah"]],
-  ["obavijesti", "Obavijesti", ["notes","noteSeconds"]],
-  ["nocni", "Noćni način", ["night"]],
-  ["najava", "Najava i prikaz", ["announcement","showSeconds"]],
-  ["boje", "Boje", ["colors"]]
+/* three tabs; the choice is kept in the address (#obavijesti). Old section links still land in the right tab. */
+const TABS = [
+  ["danas", "Danas", ["offsets","overrides","jumuah"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'],
+  ["obavijesti", "Obavijesti", ["notes","announcement"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>'],
+  ["podesavanja", "Podešavanja", ["masjidName","city","lat","lng","source","cityIndex","asrFactor","hijriAdjust","fajrAngle","ishaAngle","noteSeconds","showSeconds","night","colors"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>']
 ];
-const sectionFromHash = () => { const h = location.hash.slice(1); return SECTIONS.some(s => s[0] === h) ? h : null; };
-let activeSection = sectionFromHash() || SECTIONS[0][0];
+const OLD_SECTIONS = {vremena:"danas", najava:"obavijesti", dzamija:"podesavanja", izvor:"podesavanja", nocni:"podesavanja", boje:"podesavanja"};
+const tabFromHash = () => { const h = location.hash.slice(1); return TABS.some(t => t[0] === h) ? h : (OLD_SECTIONS[h] || null); };
+let activeTab = tabFromHash() || TABS[0][0];
 function buildNav(){
   const nav = $("aNav"); nav.textContent = "";
-  for (const [id, label] of SECTIONS){
-    nav.append(el("button",{type:"button","data-sec":id,onclick:()=>{ showSection(id, true); history.replaceState(null, "", "#" + id); }},
-      el("span",{text:label})));
+  for (const [id, label, , icon] of TABS){
+    nav.append(el("button",{type:"button","data-tab":id,onclick:()=>{ showTab(id, true); history.replaceState(null, "", "#" + id); }},
+      svg(icon), el("span",{text:label})));
   }
-  showSection(activeSection);
+  showTab(activeTab);
   updateNavDots();
 }
-// picked: chosen from the menu (not a rebuild), so bring the new section and its tab into view
-function showSection(id, picked){
-  activeSection = id;
-  for (const s of document.querySelectorAll("#aMain [data-sec]")) s.hidden = s.dataset.sec !== id;
-  for (const b of $("aNav").children) b.setAttribute("aria-current", String(b.dataset.sec === id));
-  if (!picked) return;
-  // back up to the start of the settings if scrolled past them (just below the sticky top bar)
-  const top = document.querySelector(".a-layout").getBoundingClientRect().top - document.querySelector(".a-bar").offsetHeight;
-  if (top < 0) window.scrollBy(0, top);
-  // phone tab strip: center the chosen tab
-  const nav = $("aNav"), b = nav.querySelector(`[data-sec="${id}"]`);
-  if (nav.scrollWidth > nav.clientWidth){
-    const nr = nav.getBoundingClientRect(), br = b.getBoundingClientRect();
-    nav.scrollLeft += (br.left - nr.left) - (nav.clientWidth - br.width) / 2;
-  }
+function showTab(id, picked){
+  activeTab = id;
+  for (const s of document.querySelectorAll("#aMain [data-tab]")) s.hidden = s.dataset.tab !== id;
+  for (const b of $("aNav").children) b.setAttribute("aria-current", String(b.dataset.tab === id));
+  if (picked) window.scrollTo(0, 0);
 }
-// a dot on sections whose settings differ from the saved ones
+// a dot on tabs whose settings differ from the saved ones
 function sectionChanged(keys){
   const today = dateKey(new Date());
   const pick = (o, k) => k === "overrides" ? Object.fromEntries(Object.entries(o[k] || {}).filter(([d]) => d >= today)) : o[k];
@@ -653,20 +749,21 @@ function sectionChanged(keys){
 function updateNavDots(){
   if (!draft) return;
   for (const b of $("aNav").children){
-    const keys = SECTIONS.find(s => s[0] === b.dataset.sec)[2], changed = dirty && sectionChanged(keys);
+    const keys = TABS.find(t => t[0] === b.dataset.tab)[2], changed = dirty && sectionChanged(keys);
     let dot = b.querySelector(".dot-unsaved");
     if (changed && !dot) b.append(el("span",{class:"dot-unsaved",title:"Nesačuvane promjene","aria-label":"nesačuvane promjene"}));
     else if (!changed && dot) dot.remove();
   }
 }
-window.addEventListener("hashchange", () => { const id = sectionFromHash(); if (id) showSection(id); });
-// keeps the menu just below the sticky top bar, whose height changes (phones, conflict notice)
+window.addEventListener("hashchange", () => { const id = tabFromHash(); if (id) showTab(id); });
+// keeps the laptop menu just below the sticky top bar, whose height changes (conflict notice)
 if (window.ResizeObserver) new ResizeObserver(([e]) => document.documentElement.style.setProperty("--bar-h", e.target.offsetHeight + "px")).observe(document.querySelector(".a-bar"));
 
 const ORIENTS = [["auto","Automatski","Prati oblik ekrana"],["landscape","Horizontalno","Uvijek horizontalni raspored"],["portrait","Vertikalno","Uvijek vertikalni raspored"],["rotate","Zarotirano","Vertikalno, slika okrenuta za 90° za TV koji ne može sam rotirati prikaz"]];
 let orientBusy = false;
+let orientBox = null;
 function renderOrientSwitch(){
-  const box = $("orientSwitch"); box.textContent = "";
+  const box = orientBox; if (!box) return; box.textContent = "";
   const cur = config.orientation || "auto";
   for (const [v,t,tip] of ORIENTS){
     box.append(el("button",{type:"button",class:"seg"+(cur===v?" on":""),"aria-pressed":String(cur===v),title:tip,text:t,
@@ -684,6 +781,7 @@ async function setOrientation(v){
       const next = Object.assign(clone(config), {orientation:v});
       next.updatedAt = await putSettings(next, baseVersion);
       config = next; baseVersion = next.updatedAt; if (draft) draft.orientation = v;
+      liveTexts.forEach(f => f());
       setSaveState(done);
     }catch(e){
       if (e.code !== "conflict") throw e;
@@ -715,6 +813,10 @@ async function saveDraft(base){
   $("btnMine").disabled = false;
 }
 $("btnSave").onclick = () => saveDraft(baseVersion);
+$("btnDiscard").onclick = () => {
+  if (!confirm("Odbaciti sve nesačuvane promjene?")) return;
+  dirty = false; hideConflict(); renderAdmin(); setSaveState("Promjene su odbačene.");
+};
 
 /* someone else saved since this page loaded its settings */
 let conflictVersion = "";
