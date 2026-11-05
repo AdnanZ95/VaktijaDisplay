@@ -203,10 +203,16 @@ button{font:inherit;color:inherit}
 <script src="/shared.js"></script>
 <script>
 (() => {
-let config = normalize(JSON.parse(store.get(CACHE_KEY) || "null"));
-let connected = false;
+const params = new URLSearchParams(location.search);
+// ?pregled=1: the live preview inside admin. Settings come from admin (postMessage), and the page
+// never fetches, reports in, keeps the screen awake, reloads itself or installs the offline copy.
+const PREVIEW = params.get("pregled") === "1";
+const cached = PREVIEW ? null : JSON.parse(store.get(CACHE_KEY) || "null");
+let config = normalize(cached);
+config.updatedAt = (cached && cached.updatedAt) || "";
+let connected = PREVIEW;
 // per-screen layout from the link: ?raspored=horizontalno | vertikalno | rotirano
-const forcedOrient = {horizontalno:"landscape", vertikalno:"portrait", rotirano:"rotate"}[new URLSearchParams(location.search).get("raspored")] || null;
+const forcedOrient = {horizontalno:"landscape", vertikalno:"portrait", rotirano:"rotate"}[params.get("raspored")] || null;
 
 /* ---------------- display ---------------- */
 let tickTimer = null, noteTimer = null, noteIdx = 0, cornerTimer = null, wakeLock = null;
@@ -390,13 +396,14 @@ function startDisplay(){
   clearInterval(tickTimer);
   tickTimer = setInterval(tick, 1000);
   updateStatus();
-  requestWake();
+  if (!PREVIEW) requestWake();
 }
 async function requestWake(){
   try{ if ("wakeLock" in navigator && !wakeLock){ wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); } }catch(e){}
 }
 document.addEventListener("visibilitychange", () => { if (!document.hidden) requestWake(); });
 ["mousemove","touchstart","keydown"].forEach(ev => document.addEventListener(ev, () => {
+  if (PREVIEW) return;
   $("dCorner").classList.add("show");
   clearTimeout(cornerTimer);
   cornerTimer = setTimeout(() => $("dCorner").classList.remove("show"), 3000);
@@ -421,6 +428,16 @@ async function refresh(){
   updateStatus();
 }
 startDisplay();
+if (PREVIEW){
+  // admin sends its (unsaved) settings whenever they change
+  window.addEventListener("message", e => {
+    if (e.origin !== location.origin || !e.data || e.data.type !== "vaktija-preview") return;
+    config = normalize(e.data.config);
+    renderedDay = ""; tick(); layoutStage();
+  });
+  if (window.parent !== window) window.parent.postMessage({type:"vaktija-preview-ready"}, location.origin);
+  return;
+}
 refresh();
 setInterval(refresh, 30000);
 // reload once a night (03:30–05:00) so the screen picks up new versions of the page,
@@ -442,6 +459,28 @@ async function nightlyReload(){
   nightlyBusy = false;
 }
 setInterval(nightlyReload, 60000);
+/* screen status: report in every 5 minutes, and soon after new settings arrive, so admin can
+   show that this screen is on and which settings it shows. The server throttles writes to one
+   per 3 minutes, so a report after new settings waits until 3 minutes after the previous one. */
+const SCREEN_KEY = "vaktija.screenId";
+let screenId = store.get(SCREEN_KEY);
+if (!/^[a-z0-9]{8,24}$/.test(screenId || "")){ screenId = (Math.random().toString(36).slice(2) + Date.now().toString(36)).slice(0, 16); store.set(SCREEN_KEY, screenId); }
+let lastPing = 0, pingedVersion = null;
+async function ping(){
+  const st = $("stage"), rotated = (forcedOrient || config.orientation) === "rotate";
+  const body = {id:screenId, version:config.updatedAt || "", since:loadedAt.toISOString(),
+    layout: rotated ? "rotirano" : st.classList.contains("p") ? "vertikalno" : "horizontalno",
+    w:window.innerWidth, h:window.innerHeight};
+  try{
+    const r = await fetch("/api/ping", {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body)});
+    if (r.ok && (await r.json()).recorded){ lastPing = Date.now(); pingedVersion = body.version; }
+  }catch(e){}
+}
+setInterval(() => {
+  const since = Date.now() - lastPing;
+  if (since >= 5*60000 || (pingedVersion !== (config.updatedAt || "") && since >= 3*60000 + 5000)) ping();
+}, 30000);
+setTimeout(ping, 5000);
 // keep a copy of the board so it can also start without internet (see sw.js)
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 })();

@@ -190,6 +190,28 @@ input[type=date].inp{display:block}
 .cprev .r.cur{background:var(--c-surface-2);box-shadow:inset 3px 0 0 #49B9AE}
 .cprev .r.next{background:var(--c-accent);color:var(--c-on-accent)}
 
+/* screen status (top bar) and the Ekran tab */
+.scr-pill{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg);font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap}
+.scr-dot{width:10px;height:10px;border-radius:50%;background:var(--ink-2);flex-shrink:0}
+.scr-pill.on .scr-dot,.scr-item.on .scr-dot{background:#2EA36B;box-shadow:0 0 0 3px rgba(46,163,107,.2)}
+.scr-pill.off .scr-dot,.scr-item.off .scr-dot{background:var(--warn)}
+.scr-list{display:grid;gap:10px}
+.scr-item{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:12px}
+.scr-item .scr-dot{grid-row:1}
+.scr-item b{font-size:16px}
+.scr-item .st{font-weight:500;color:var(--ink-2)}
+.scr-item.on .st{color:#2EA36B}
+.scr-item.off .st{color:var(--warn)}
+.scr-item ul{grid-column:2;margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:14px;color:var(--ink-2)}
+.scr-item li.warn{color:var(--warn)}
+.pv-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.pv-head .seg-group{flex:0 0 auto;min-width:240px}
+.pv-frame{position:relative;margin:0 auto;border-radius:12px;overflow:hidden;background:#0F1C33;border:1px solid var(--line)}
+.pv-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.pv-frame.land{width:100%;aspect-ratio:16/9}
+.pv-frame.port{height:min(70vh,640px);aspect-ratio:9/16;max-width:100%}
+.pv-note{margin:10px 0 0;font-size:13px;color:var(--ink-2);line-height:1.4}
+
 /* save bar: appears at the bottom only when there is something to save or report */
 .savebar{position:fixed;z-index:6;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(940px,calc(100% - 32px));display:flex;align-items:center;gap:8px;padding:8px 8px 8px 16px;border-radius:14px;background:var(--surface);border:1px solid var(--accent);box-shadow:0 8px 28px rgba(10,20,40,.22)}
 .save-state{flex:1;min-width:0;font-size:14px;font-weight:500;line-height:1.35;color:var(--ink)}
@@ -204,7 +226,7 @@ input[type=date].inp{display:block}
   .a-conflict-btns{flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr}
   .a-conflict-btns .btn{padding:8px 6px;font-size:14px}
   .a-layout{grid-template-columns:minmax(0,1fr);gap:0;padding:16px 12px calc(150px + env(safe-area-inset-bottom,0px))}
-  .a-nav{position:fixed;z-index:5;left:0;right:0;bottom:0;top:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line)}
+  .a-nav{position:fixed;z-index:5;left:0;right:0;bottom:0;top:auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line)}
   .a-nav button{flex-direction:column;justify-content:center;gap:3px;min-height:56px;padding:6px 2px;font-size:12px;text-align:center;border-radius:12px}
   .a-nav button svg{width:24px;height:24px}
   .a-nav button[aria-current="true"]{background:transparent;color:var(--accent)}
@@ -215,6 +237,8 @@ input[type=date].inp{display:block}
   .grp-body{padding:0 14px 16px}
   .savebar{width:calc(100% - 24px);bottom:calc(72px + env(safe-area-inset-bottom,0px));padding:8px 8px 8px 14px}
   .savebar .save-state{font-size:13px}
+  .scr-pill{padding:6px 10px;font-size:13px}
+  .pv-head .seg-group{flex:1 1 100%;min-width:0}
   .colors{grid-template-columns:1fr}
   .seg{font-size:13px;padding:10px 2px}
   .m-hide{display:none}
@@ -244,6 +268,7 @@ input[type=date].inp{display:block}
 <section id="admin" class="admin" hidden>
   <div class="a-bar"><div class="a-bar-in">
     <div class="a-title"><h1>Vaktija</h1><span class="sub" id="aSub"></span></div>
+    <button class="scr-pill" id="scrPill" type="button" hidden><span class="scr-dot"></span><span id="scrPillText"></span></button>
     <button class="btn" id="btnPreview" type="button"><span class="m-hide">Pogledaj prikaz</span><span class="m-show">Prikaz</span></button>
   </div>
   <div class="a-conflict" id="conflictBar" role="alert" hidden>
@@ -307,6 +332,7 @@ async function openAdmin(){
   catch(e){ $("lockMsg").textContent = "Postavke se ne mogu učitati. Provjerite internet."; return; }
   $("lock").hidden = true; $("admin").hidden = false;
   dirty = false; renderAdmin();
+  startScreens();
 }
 async function tryUnlock(){
   const p = $("pinEntry").value.trim();
@@ -331,10 +357,12 @@ function logout(){
   dirty = false; syncSaveBar(); hideConflict(); forgetPin(); showLock();
 }
 $("btnPreview").onclick = () => window.open("/", "_blank");
+$("scrPill").onclick = () => { showTab("ekran", true); history.replaceState(null, "", "#ekran"); };
 
 /* ---------------- admin ---------------- */
 function setDirty(v){
   dirty = v;
+  sendPreview();
   $("btnSave").disabled = !v;
   if (v) setSaveState("Nesačuvane promjene");
   else syncSaveBar();
@@ -476,7 +504,8 @@ function renderAdmin(){
   if (!dirty) draft = clone(config);
   timeRows = []; checkSync = {}; liveTexts = [];
   $("aSub").textContent = [draft.masjidName, draft.city].filter(x => (x||"").trim()).join(" · ");
-  const main = $("aMain"); main.textContent = "";
+  const main = $("aMain");
+  for (const sec of [...main.children]) if (sec.dataset.tab !== "ekran") sec.remove();
   const today = new Date(), todayKey = dateKey(today);
   draft.overrides = draft.overrides || {};
   for (const k of Object.keys(draft.overrides)) if (k < todayKey) delete draft.overrides[k]; // past days
@@ -701,17 +730,118 @@ function renderAdmin(){
       el("button",{class:"btn danger",type:"button",text:"Odjavi se",onclick:logout}))
   ));
 
+  if (!$("tabEkran")) main.append(buildEkranTab());
   renderOrientSwitch();
   refreshTable();
+  renderScreens();
+  sendPreview();
   buildNav();
   $("btnSave").disabled = !dirty;
   syncSaveBar();
 }
 
-/* three tabs; the choice is kept in the address (#obavijesti). Old section links still land in the right tab. */
+/* ---------------- Ekran: screen status and live preview ---------------- */
+const ONLINE_MS = 12 * 60000; // screens report every 5 minutes; two missed reports = offline
+let screens = null, screensAt = 0, screensTimer = null;
+async function loadScreens(){
+  if (!pin || $("admin").hidden) return;
+  try{
+    const r = await fetch("/api/screens", {headers:{"x-admin-pin":pin}, cache:"no-store"});
+    if (!r.ok) return;
+    const d = await r.json();
+    screens = Object.values(d.screens || {}).sort((a, b) => Date.parse(a.first) - Date.parse(b.first));
+    screensAt = Date.now() - Date.parse(d.now); // server clock vs this device
+  }catch(e){ return; }
+  renderScreens();
+}
+const nowServer = () => Date.now() - screensAt;
+function ago(iso){
+  const t = Date.parse(iso); if (!t) return "";
+  const m = Math.round((nowServer() - t) / 60000), d = new Date(t);
+  if (m < 1) return "upravo sada";
+  if (m < 60) return `prije ${m} min`;
+  if (m < 6*60) return `prije ${Math.floor(m/60)} h ${m%60 ? (m%60) + " min" : ""}`.trim();
+  return dateKey(d) === dateKey(new Date()) ? `danas u ${pad(d.getHours())}:${pad(d.getMinutes())}` : `${d.getDate()}.${d.getMonth()+1}. u ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function renderScreens(){
+  const pill = $("scrPill"), list = $("scrList");
+  if (screens === null){ pill.hidden = true; return; }
+  const online = screens.filter(x => nowServer() - Date.parse(x.at) < ONLINE_MS);
+  pill.hidden = false;
+  pill.className = "scr-pill " + (online.length ? "on" : screens.length ? "off" : "");
+  $("scrPillText").textContent = online.length ? (screens.length > 1 ? `Ekrani uživo: ${online.length}/${screens.length}` : "Ekran uživo") : screens.length ? "Ekran van mreže" : "Ekran nije javljen";
+  pill.title = "Stanje ekrana u džamiji";
+  if (!list) return;
+  if (!screens.length){
+    list.replaceChildren(el("p",{class:"empty",text:"Nijedan ekran se još nije javio. Ekran se javlja svakih 5 minuta nakon što učita najnoviju verziju prikaza (svake noći oko 03:30, ili odmah ako osvježite stranicu na TV-u)."}));
+    return;
+  }
+  list.replaceChildren(...screens.map((x, i) => {
+    const on = nowServer() - Date.parse(x.at) < ONLINE_MS, latest = x.version && x.version === config.updatedAt;
+    const items = [
+      el("li",{text:`Zadnji put se javio ${ago(x.at)}`}),
+      el("li",{class: latest || !on ? "" : "warn", text: latest ? (on ? "Prikazuje zadnje sačuvane postavke" : "Imao je zadnje sačuvane postavke") : on ? "Još prikazuje starije postavke; nove preuzima u roku od par minuta" : "Prikazivao je postavke sačuvane prije zadnje izmjene"}),
+      el("li",{text:[x.layout, x.w && x.h ? `${x.w}×${x.h}` : "", x.since ? `učitan ${ago(x.since)}` : ""].filter(Boolean).join(" · ")})
+    ];
+    if (!on) items.push(el("li",{class:"warn",text:"Provjerite da li su TV i internet u džamiji uključeni."}));
+    return el("div",{class:"scr-item " + (on ? "on" : "off")},
+      el("span",{class:"scr-dot"}),
+      el("div",{}, el("b",{text: screens.length > 1 ? `Ekran ${i+1}` : "Ekran u džamiji"}), " ", el("span",{class:"st",text: on ? "· uživo" : "· van mreže"})),
+      el("ul",{}, ...items));
+  }));
+}
+// the admin page polls the status once a minute while it is open and visible
+function startScreens(){ clearInterval(screensTimer); loadScreens(); screensTimer = setInterval(() => { if (!document.hidden) loadScreens(); else renderScreens(); }, 60000); }
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("admin").hidden) loadScreens(); });
+
+let pvOrient = null, pvFrame = null, pvTimer = null;
+function buildEkranTab(){
+  const seg = el("div",{class:"seg-group",role:"group","aria-label":"Raspored pregleda",id:"pvSeg"});
+  for (const [v, t] of [["horizontalno","Horizontalno"],["vertikalno","Vertikalno"]])
+    seg.append(el("button",{type:"button",class:"seg","data-v":v,text:t,onclick:()=>{ pvOrient = v; ensurePreview(true); }}));
+  return el("section",{"data-tab":"ekran",id:"tabEkran"},
+    el("div",{class:"tab-head"}, el("h2",{text:"Ekran"}), el("p",{text:"Da li je ekran u džamiji uključen i kako izgleda prikaz."})),
+    el("div",{class:"card"},
+      el("h3",{text:"Stanje"}),
+      el("p",{class:"hint",text:"Ekran se javlja svakih 5 minuta. Ako se ne javi duže od 12 minuta, prikazuje se kao van mreže."}),
+      el("div",{class:"scr-list",id:"scrList"})),
+    el("div",{class:"card"},
+      el("div",{class:"pv-head"}, el("h3",{text:"Pregled",style:"margin:0"}), seg),
+      el("div",{class:"pv-frame land",id:"pvBox"}),
+      el("p",{class:"pv-note",id:"pvNote"})));
+}
+// creates the preview frame the first time the tab is opened (or again when the layout changes)
+function ensurePreview(force){
+  const box = $("pvBox"); if (!box) return;
+  if (!pvOrient) pvOrient = ["portrait","rotate"].includes(config.orientation) ? "vertikalno" : "horizontalno";
+  for (const b of $("pvSeg").children){ const on = b.dataset.v === pvOrient; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }
+  box.className = "pv-frame " + (pvOrient === "vertikalno" ? "port" : "land");
+  if (pvFrame && !force) return;
+  box.textContent = "";
+  pvFrame = el("iframe",{src:`/?pregled=1&raspored=${pvOrient}`,title:"Pregled ekrana",loading:"eager",tabindex:"-1"});
+  box.append(pvFrame);
+  updatePvNote();
+}
+function updatePvNote(){
+  const n = $("pvNote"); if (!n) return;
+  n.textContent = dirty ? "Pregled prikazuje i vaše nesačuvane promjene. Na ekranu u džamiji pojavit će se kad ih sačuvate."
+                        : "Ovako trenutno izgleda prikaz sa sačuvanim postavkama.";
+}
+function sendPreview(){
+  updatePvNote();
+  clearTimeout(pvTimer);
+  pvTimer = setTimeout(() => {
+    if (!pvFrame || !pvFrame.contentWindow || !draft) return;
+    pvFrame.contentWindow.postMessage({type:"vaktija-preview", config:JSON.parse(JSON.stringify(draft))}, location.origin);
+  }, 150);
+}
+window.addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.type === "vaktija-preview-ready") sendPreview(); });
+
+/* tabs; the choice is kept in the address (#obavijesti). Old section links still land in the right tab. */
 const TABS = [
   ["danas", "Danas", ["offsets","overrides","jumuah"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'],
   ["obavijesti", "Obavijesti", ["notes","announcement"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>'],
+  ["ekran", "Ekran", [], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>'],
   ["podesavanja", "Podešavanja", ["masjidName","city","lat","lng","source","cityIndex","asrFactor","hijriAdjust","fajrAngle","ishaAngle","noteSeconds","showSeconds","night","colors"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>']
 ];
 const OLD_SECTIONS = {vremena:"danas", najava:"obavijesti", dzamija:"podesavanja", izvor:"podesavanja", nocni:"podesavanja", boje:"podesavanja"};
@@ -730,6 +860,7 @@ function showTab(id, picked){
   activeTab = id;
   for (const s of document.querySelectorAll("#aMain [data-tab]")) s.hidden = s.dataset.tab !== id;
   for (const b of $("aNav").children) b.setAttribute("aria-current", String(b.dataset.tab === id));
+  if (id === "ekran"){ ensurePreview(); loadScreens(); }
   if (picked) window.scrollTo(0, 0);
 }
 // a dot on tabs whose settings differ from the saved ones
@@ -741,7 +872,7 @@ function sectionChanged(keys){
 function updateNavDots(){
   if (!draft) return;
   for (const b of $("aNav").children){
-    const keys = TABS.find(t => t[0] === b.dataset.tab)[2], changed = dirty && sectionChanged(keys);
+    const keys = TABS.find(t => t[0] === b.dataset.tab)[2], changed = dirty && keys.length > 0 && sectionChanged(keys);
     let dot = b.querySelector(".dot-unsaved");
     if (changed && !dot) b.append(el("span",{class:"dot-unsaved",title:"Nesačuvane promjene","aria-label":"nesačuvane promjene"}));
     else if (!changed && dot) dot.remove();
