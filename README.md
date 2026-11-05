@@ -13,6 +13,7 @@ The board needs no login. Admin is protected by a PIN that is stored on Cloudfla
 |---|---|
 | `public/index.html` | The board shown on the TV |
 | `public/admin/index.html` | The admin page |
+| `public/admin/manifest.webmanifest`, `icon-*.png` | Lets admin be added to a phone's home screen as an app |
 | `public/shared.js` | Shared code: the official takvim for 118 locations and the prayer-time math |
 | `public/sw.js` | Keeps a copy of the board in the TV's browser so it can start and reload without internet |
 | `public/_headers` | Small security headers (admin is hidden from search engines) |
@@ -20,6 +21,7 @@ The board needs no login. Admin is protected by a PIN that is stored on Cloudfla
 | `functions/api/login.js` | Checks the admin PIN |
 | `functions/api/ping.js` | The TV reports that it is on (every 5 minutes) |
 | `functions/api/screens.js` | Admin reads which screens have reported in (PIN required) |
+| `worker/alert.js` | Separate small Worker: checks every 10 minutes and sends a phone notification (ntfy) when the screen stops reporting. See "Offline alert" |
 | `lib/screens.js` | Stores screen reports, at most one write per 3 minutes to stay within the free plan |
 | `lib/auth.js` | PIN check with a limit of 10 wrong attempts per 15 minutes |
 | `tests/run.mjs` | Checks for the prayer-time rules (takvim, summer/winter time, džuma, offsets, notes). Run with `node tests/run.mjs`; GitHub runs them on every pull request |
@@ -96,13 +98,32 @@ You can skip this and enter everything in admin instead.
 Open `/admin/` on your laptop or phone and enter the PIN. Tick **Zapamti ovaj uređaj** on your own devices so you aren't asked for the PIN every time. Admin has three parts (a menu on the left on a laptop, a tab bar at the bottom on a phone):
 
 - **Danas**: today's times as shown on the board. Tap a prayer to set a time for today only, or a permanent offset in minutes. Below are quick on/off switches for the full-screen announcement, Džuma on Fridays, and night mode.
-- **Obavijesti**: the notes that rotate at the bottom of the board (with optional dates and weekdays), and the full-screen announcement text.
+- **Obavijesti**: the notes that rotate at the bottom of the board (with optional dates and weekdays), and the full-screen announcement text. **Ukloni** moves a note to the **Arhiva** (up to 30 are kept), where notes whose end date has passed also appear; **Ponovi** puts one back on the board without retyping it.
 - **Ekran**: whether the screen in the masjid is on (it reports every 5 minutes; after 12 minutes of silence it shows as offline) and whether it shows the latest saved settings, plus a live preview of the board that already includes your unsaved changes. The dot in the top bar shows the same status from any tab.
 - **Podešavanja**: things set once: masjid name, prayer-time source and city, board layout, seconds and note timing, night mode details, colors, and **Odjavi se**. Each group shows its current value when closed.
 
 When something changes, a bar appears at the bottom with **Sačuvaj** and **Odbaci**. A dot on a tab marks unsaved changes there. The board layout (Podešavanja → Prikaz na ekranu) is the one setting that saves immediately.
 
 Colors: pick the main color (background) and the secondary color (accent), or click one of the ready-made pairs. Card shades follow the main color automatically, a warning appears if a pair would be hard to read, and **Vrati zadane boje** returns to the original navy and gold.
+
+### Admin as an app on your phone
+
+Podešavanja → Ovaj uređaj shows how to add admin to the home screen (Android: **Instaliraj aplikaciju**; iPhone: Safari → Share → **Add to Home Screen**). It then opens full screen with its own icon. On iPhone, log in once inside the app with **Zapamti ovaj uređaj**, because it keeps its own storage separate from Safari.
+
+## Offline alert (optional, about 10 minutes, once)
+
+A small separate Cloudflare Worker checks every 10 minutes whether the screen is still reporting, and sends a notification to your phone through the free **ntfy** app if it has been silent longer than the time set in admin (Ekran → Obavještenje na telefon), and again when it is back. Admin also shows the steps below with your topic name filled in.
+
+1. Install **ntfy** (Google Play / App Store), tap **+** and subscribe to a private topic name, for example the one admin suggests (`vaktija-` plus 12 random characters). Anyone who knows the name can read the notifications, so don't use a guessable one.
+2. In the Cloudflare dashboard: **Workers & Pages → Create → Create Worker**, name it `vaktija-obavjestenja`, **Deploy**.
+3. **Edit code**: replace the example with the contents of `worker/alert.js`, **Deploy**.
+4. Worker **Settings → Bindings → Add → KV namespace**: variable name `VAKTIJA`, namespace `vaktija-settings`.
+5. **Settings → Variables and Secrets → Add**: type **Secret**, name `NTFY_TOPIC`, value = your topic. Optionally add a text variable `ADMIN_URL` = `https://<your-project>.pages.dev/admin/#ekran` so tapping a notification opens admin.
+6. **Settings → Trigger events → Add → Cron Triggers**: `*/10 * * * *`.
+
+Within 10 minutes your phone gets "obavještenja su uključena", and admin shows **Povezano**. Opening the Worker's own address shows whether something is missing. If `worker/alert.js` changes later, paste the new version the same way (step 3).
+
+The Worker only reads settings and screen reports, and writes to storage only when it sends something, so it stays well within the free plan.
 
 ## Changing the PIN
 
