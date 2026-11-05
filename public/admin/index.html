@@ -375,7 +375,9 @@ function refreshTable(){
   for (const tr of tableBody.children){
     const k = tr.dataset.key;
     tr.querySelector(".calc").textContent = minToHHMM(t[k].raw) + (t[k].official ? "" : " (izračun)");
-    tr.querySelector(".final").textContent = minToHHMM(t[k].min) + (t[k].manual ? " ✎" : "");
+    tr.querySelector(".final").textContent = minToHHMM(t[k].min) + (t[k].manual ? " ✎" : (t[k].jumuah ? " (džuma)" : ""));
+    const n = prayerName(k, today, draft);
+    tr.querySelector(".pname").replaceChildren(n.bs, el("span",{class:"ar",text:n.ar}));
   }
 }
 function renderAdmin(){
@@ -445,17 +447,22 @@ function renderAdmin(){
       setDirty(true); refreshTable();
     });
     tableBody.append(el("tr",{"data-key":k},
-      el("td",{}, NAMES[k].bs, el("span",{class:"ar",text:NAMES[k].ar})),
+      el("td",{class:"pname"}, NAMES[k].bs, el("span",{class:"ar",text:NAMES[k].ar})),
       el("td",{class:"calc"}), el("td",{}, off), el("td",{}, ov), el("td",{class:"final"})));
   }
   // drop stale overrides from past days
   for (const k of Object.keys(draft.overrides)) if (k < todayKey) delete draft.overrides[k];
+  const jOn = el("input",{type:"checkbox"}); jOn.checked = !!(draft.jumuah && draft.jumuah.on);
+  jOn.addEventListener("change", () => { draft.jumuah = Object.assign({}, draft.jumuah, {on:jOn.checked}); setDirty(true); refreshTable(); });
   main.append(el("section",{class:"a-sec","data-sec":"vremena"},
     el("h2",{text:"Današnja vremena"}),
     el("p",{class:"hint",text:"Osnova je zvanična vaktija ili izračun. Pomak (min) vrijedi svaki dan. Ručno vrijeme vrijedi samo danas i ima prednost nad izračunom."}),
     el("div",{class:"ptable-wrap"}, el("table",{class:"ptable"},
       el("thead",{}, el("tr",{}, ...["Namaz","Osnova","Pomak (min)","Ručno danas","Na ekranu"].map(t=>el("th",{text:t})))),
-      tableBody))
+      tableBody)),
+    el("h2",{text:"Džuma",style:"margin-top:20px"}),
+    el("p",{class:"hint",text:"Petkom se podne na ekranu prikazuje kao Džuma (الجمعة) u 12:00 tokom zimskog i u 13:00 tokom ljetnog računanja vremena. Pomak za podne se tada ne primjenjuje, a ručno vrijeme za taj dan i dalje ima prednost."}),
+    el("label",{class:"check"}, jOn, "Prikaži džumu petkom")
   ));
   refreshTable();
 
@@ -604,7 +611,7 @@ function renderAdmin(){
 const SECTIONS = [
   ["dzamija", "Džamija", ["masjidName","city","lat","lng"]],
   ["izvor", "Izvor vremena", ["source","cityIndex","asrFactor","hijriAdjust","fajrAngle","ishaAngle"]],
-  ["vremena", "Današnja vremena", ["offsets","overrides"]],
+  ["vremena", "Današnja vremena", ["offsets","overrides","jumuah"]],
   ["obavijesti", "Obavijesti", ["notes","noteSeconds"]],
   ["nocni", "Noćni način", ["night"]],
   ["najava", "Najava i prikaz", ["announcement","showSeconds"]],
