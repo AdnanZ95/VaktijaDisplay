@@ -128,5 +128,69 @@ test("default colors pass the readability check, a very light background does no
   eq([S.colorWarnings(S.DEFAULTS.colors).length > 0, S.colorWarnings({main:"#EEEEEE", secondary:"#D4AF5F"}).length > 0], [false, true]);
 });
 
+/* ---------- screen status (server) ---------- */
+async function atest(name, fn){
+  try{ await fn(); passed++; }
+  catch(e){ failed++; console.log(`FAIL  ${name}\n      ${e.message}`); }
+}
+const { recordPing, readScreens, MIN_WRITE_GAP_MS, MAX_SCREENS } = await import("../lib/screens.js");
+const ping = await import("../functions/api/ping.js");
+const screensApi = await import("../functions/api/screens.js");
+function fakeEnv(pin = "1234"){
+  const kv = new Map(); let writes = 0;
+  return { ADMIN_PIN: pin, writes: () => writes, VAKTIJA: {
+    get: async k => kv.has(k) ? kv.get(k) : null,
+    put: async (k, v) => { writes++; kv.set(k, v); },
+    delete: async k => { kv.delete(k); } } };
+}
+const T0 = Date.parse("2026-11-05T12:00:00Z");
+const report = (id, extra = {}) => Object.assign({id, version:"v1", since:"2026-11-05T03:30:00Z", layout:"horizontalno", w:1920, h:1080}, extra);
+
+await atest("a screen report is stored with its details", async () => {
+  const env = fakeEnv();
+  eq(await recordPing(env, report("screen0001"), T0), true);
+  const s = (await readScreens(env)).screens.screen0001;
+  eq([s.version, s.layout, s.w, s.h, s.at], ["v1", "horizontalno", 1920, 1080, "2026-11-05T12:00:00.000Z"]);
+});
+await atest("reports are written at most once per 3 minutes, however many arrive", async () => {
+  const env = fakeEnv();
+  for (let i = 0; i < 100; i++) await recordPing(env, report("screen" + String(i).padStart(4, "0")), T0 + i * 1000);
+  eq(env.writes(), 1);
+  await recordPing(env, report("screen0001"), T0 + MIN_WRITE_GAP_MS);
+  eq(env.writes(), 2);
+});
+await atest("at most 5 screens are kept, and silent ones are forgotten after a week", async () => {
+  const env = fakeEnv();
+  for (let i = 0; i < 8; i++) await recordPing(env, report("screen000" + i), T0 + i * MIN_WRITE_GAP_MS);
+  eq(Object.keys((await readScreens(env)).screens).length, MAX_SCREENS);
+  await recordPing(env, report("screenlate"), T0 + 8 * 24 * 3600e3);
+  eq(Object.keys((await readScreens(env)).screens), ["screenlate"]);
+});
+await atest("bad ids and oversized fields are rejected or trimmed", async () => {
+  const env = fakeEnv();
+  eq([await recordPing(env, {id:"../x"}, T0), await recordPing(env, {}, T0), await recordPing(env, null, T0)], [false, false, false]);
+  await recordPing(env, report("screen0001", {layout:"x".repeat(500), w:"abc", version:{}}), T0);
+  const s = (await readScreens(env)).screens.screen0001;
+  eq([s.layout.length, s.w, s.version], [16, 0, ""]);
+});
+await atest("the first-seen time stays when a screen reports again", async () => {
+  const env = fakeEnv();
+  await recordPing(env, report("screen0001"), T0);
+  await recordPing(env, report("screen0001"), T0 + MIN_WRITE_GAP_MS);
+  const s = (await readScreens(env)).screens.screen0001;
+  eq([s.first, s.at], ["2026-11-05T12:00:00.000Z", "2026-11-05T12:03:00.000Z"]);
+});
+await atest("POST /api/ping works without a PIN; GET /api/screens needs it", async () => {
+  const env = fakeEnv();
+  const req = (method, body, headers = {}) => new Request("https://x/api", {method, headers, body});
+  const r1 = await ping.onRequestPost({request:req("POST", JSON.stringify(report("screen0001"))), env});
+  eq([r1.status, (await r1.json()).recorded], [200, true]);
+  const big = await ping.onRequestPost({request:req("POST", "x".repeat(5000)), env});
+  eq(big.status, 413);
+  eq((await screensApi.onRequestGet({request:req("GET", undefined, {"x-admin-pin":"0000"}), env})).status, 401);
+  const ok = await screensApi.onRequestGet({request:req("GET", undefined, {"x-admin-pin":"1234"}), env});
+  eq([ok.status, Object.keys((await ok.json()).screens)], [200, ["screen0001"]]);
+});
+
 console.log(`${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

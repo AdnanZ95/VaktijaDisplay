@@ -18,6 +18,9 @@ The board needs no login. Admin is protected by a PIN that is stored on Cloudfla
 | `public/_headers` | Small security headers (admin is hidden from search engines) |
 | `functions/api/settings.js` | Reads settings (public) and saves them (PIN required) |
 | `functions/api/login.js` | Checks the admin PIN |
+| `functions/api/ping.js` | The TV reports that it is on (every 5 minutes) |
+| `functions/api/screens.js` | Admin reads which screens have reported in (PIN required) |
+| `lib/screens.js` | Stores screen reports, at most one write per 3 minutes to stay within the free plan |
 | `lib/auth.js` | PIN check with a limit of 10 wrong attempts per 15 minutes |
 | `tests/run.mjs` | Checks for the prayer-time rules (takvim, summer/winter time, džuma, offsets, notes). Run with `node tests/run.mjs`; GitHub runs them on every pull request |
 | `seed-settings.json` | Your current settings from the test version, to copy over in step 6 |
@@ -94,6 +97,7 @@ Open `/admin/` on your laptop or phone and enter the PIN. Tick **Zapamti ovaj ur
 
 - **Danas**: today's times as shown on the board. Tap a prayer to set a time for today only, or a permanent offset in minutes. Below are quick on/off switches for the full-screen announcement, Džuma on Fridays, and night mode.
 - **Obavijesti**: the notes that rotate at the bottom of the board (with optional dates and weekdays), and the full-screen announcement text.
+- **Ekran**: whether the screen in the masjid is on (it reports every 5 minutes; after 12 minutes of silence it shows as offline) and whether it shows the latest saved settings, plus a live preview of the board that already includes your unsaved changes. The dot in the top bar shows the same status from any tab.
 - **Podešavanja**: things set once: masjid name, prayer-time source and city, board layout, seconds and note timing, night mode details, colors, and **Odjavi se**. Each group shows its current value when closed.
 
 When something changes, a bar appears at the bottom with **Sačuvaj** and **Odbaci**. A dot on a tab marks unsaved changes there. The board layout (Podešavanja → Prikaz na ekranu) is the one setting that saves immediately.
@@ -114,7 +118,7 @@ Before merging a change, the **Tests** check on the pull request must be green. 
 
 ## Costs
 
-Cloudflare's free plan covers this comfortably: one TV reading every 30 seconds uses under 3,000 reads a day, and saves are rare.
+Cloudflare's free plan covers this comfortably: one TV reading every 30 seconds uses under 3,000 reads a day, and saves are rare. Screen status reports are written at most once every 3 minutes (under 500 writes a day, within the free 1,000), so saves always have room.
 
 ## Notes
 
