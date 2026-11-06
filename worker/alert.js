@@ -1,3 +1,6 @@
+// STATUS: paused. The admin card is hidden (ALERTS_ENABLED = false in public/admin/index.html)
+// and this Worker is not deployed. Kept for a later iteration.
+//
 // Vaktija — offline alert. A small Cloudflare Worker that runs every 10 minutes, reads the
 // screen reports the board sends (see lib/screens.js) and sends a push notification through
 // ntfy (https://ntfy.sh) when a screen stops reporting, and again when it is back.
