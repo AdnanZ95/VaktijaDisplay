@@ -465,12 +465,27 @@ setInterval(nightlyReload, 60000);
 const SCREEN_KEY = "vaktija.screenId";
 let screenId = store.get(SCREEN_KEY);
 if (!/^[a-z0-9]{8,24}$/.test(screenId || "")){ screenId = (Math.random().toString(36).slice(2) + Date.now().toString(36)).slice(0, 16); store.set(SCREEN_KEY, screenId); }
+// short description shown in admin, e.g. "Android TV · Chrome", "iPhone · Safari"
+function deviceName(){
+  const ua = navigator.userAgent;
+  const kind = /SMART-TV|SmartTV|Tizen|Web0S|webOS|BRAVIA|HbbTV|AFT[A-Z]|Android TV|GoogleTV|CrKey|AndroidTV/i.test(ua) ? (/Tizen/i.test(ua) ? "Samsung TV" : /Web0S|webOS/i.test(ua) ? "LG TV" : /AFT[A-Z]/.test(ua) ? "Fire TV" : /Android/i.test(ua) ? "Android TV" : "TV")
+    : /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? "iPad"
+    : /Android/.test(ua) ? (/Mobile/.test(ua) ? "Android telefon" : "Android tablet")
+    : /CrOS/.test(ua) ? "Chromebook" : /Windows/.test(ua) ? "Windows" : /Macintosh/.test(ua) ? "Mac" : /Linux/.test(ua) ? "Linux" : "Uređaj";
+  const br = /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /SamsungBrowser/.test(ua) ? "Samsung Internet" : /Firefox\//.test(ua) ? "Firefox"
+    : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "";
+  return br ? `${kind} · ${br}` : kind;
+}
+// a phone or laptop with the admin PIN remembered is someone's own device, not a screen in the
+// masjid: it doesn't report in (unless it was marked as a screen in admin)
+const adminDevice = () => { try{ return !!localStorage.getItem("vaktija.adminPin"); }catch(e){ return false; } };
 let lastPing = 0, pingedVersion = null;
 async function ping(){
+  if (adminDevice() && !(config.screenLabels && config.screenLabels[screenId])) return;
   const st = $("stage"), rotated = (forcedOrient || config.orientation) === "rotate";
   const body = {id:screenId, version:config.updatedAt || "", since:loadedAt.toISOString(),
     layout: rotated ? "rotirano" : st.classList.contains("p") ? "vertikalno" : "horizontalno",
-    w:window.innerWidth, h:window.innerHeight};
+    w:window.innerWidth, h:window.innerHeight, device:deviceName()};
   try{
     const r = await fetch("/api/ping", {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body)});
     if (r.ok && (await r.json()).recorded){ lastPing = Date.now(); pingedVersion = body.version; }

@@ -21,6 +21,7 @@ const DEFAULTS = {
   offsets:{fajr:0,sunrise:0,dhuhr:0,asr:0,maghrib:0,isha:0},
   overrides:{},
   notes:[], noteSeconds:10,
+  screenLabels:{},  // id -> name of each device marked in admin as a screen in the masjid
   archive:[],  // removed and reusable notes (admin only; the board ignores them)
   night:{on:false, afterIsha:30, beforeFajr:30, level:70},
   announcement:{text:"",on:false},
