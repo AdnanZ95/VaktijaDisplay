@@ -821,7 +821,7 @@ function renderAdmin(){
   ));
 
   if (!$("tabEkran")) main.append(buildEkranTab());
-  $("alertsSlot").replaceChildren(buildAlertsCard());
+  if (ALERTS_ENABLED) $("alertsSlot").replaceChildren(buildAlertsCard());
   renderOrientSwitch();
   refreshTable();
   renderScreens();
@@ -963,7 +963,11 @@ function renderScreens(){
 function startScreens(){ clearInterval(screensTimer); loadScreens(); screensTimer = setInterval(() => { if (!document.hidden) loadScreens(); else renderScreens(); }, 60000); }
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("admin").hidden) loadScreens(); });
 
-/* offline alert: settings here, the check itself runs in a Cloudflare Worker (worker/alert.js) */
+/* offline alert: settings here, the check itself runs in a Cloudflare Worker (worker/alert.js).
+   PAUSED for now: the card is hidden in admin. Everything else is kept for a later iteration
+   (worker/alert.js, settings.alerts, the "Povezano" badge from /api/screens, tests).
+   To bring it back: set ALERTS_ENABLED = true and follow README → "Offline alert". */
+const ALERTS_ENABLED = false;
 const TOPIC_KEY = "vaktija.ntfyTopic";
 function ntfyTopic(){
   let t = store.get(TOPIC_KEY);
@@ -1055,7 +1059,7 @@ window.addEventListener("message", e => { if (e.origin === location.origin && e.
 const TABS = [
   ["danas", "Danas", ["offsets","overrides","jumuah"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'],
   ["obavijesti", "Obavijesti", ["notes","archive","announcement"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>'],
-  ["ekran", "Ekran", ["alerts","screenLabels"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>'],
+  ["ekran", "Ekran", ALERTS_ENABLED ? ["alerts","screenLabels"] : ["screenLabels"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>'],
   ["podesavanja", "Podešavanja", ["masjidName","city","lat","lng","source","cityIndex","asrFactor","hijriAdjust","fajrAngle","ishaAngle","noteSeconds","showSeconds","night","colors"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>']
 ];
 const OLD_SECTIONS = {vremena:"danas", najava:"obavijesti", dzamija:"podesavanja", izvor:"podesavanja", nocni:"podesavanja", boje:"podesavanja"};

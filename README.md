@@ -21,7 +21,7 @@ The board needs no login. Admin is protected by a PIN that is stored on Cloudfla
 | `functions/api/login.js` | Checks the admin PIN |
 | `functions/api/ping.js` | The TV reports that it is on (every 5 minutes) |
 | `functions/api/screens.js` | Admin reads which screens have reported in (PIN required) |
-| `worker/alert.js` | Separate small Worker: checks every 10 minutes and sends a phone notification (ntfy) when the screen stops reporting. See "Offline alert" |
+| `worker/alert.js` | Separate small Worker for a phone notification (ntfy) when the screen stops reporting. Paused for now, see "Offline alert" |
 | `lib/screens.js` | Stores screen reports, at most one write per 3 minutes to stay within the free plan |
 | `lib/auth.js` | PIN check with a limit of 10 wrong attempts per 15 minutes |
 | `tests/run.mjs` | Checks for the prayer-time rules (takvim, summer/winter time, džuma, offsets, notes). Run with `node tests/run.mjs`; GitHub runs them on every pull request |
@@ -110,7 +110,10 @@ Colors: pick the main color (background) and the secondary color (accent), or cl
 
 Podešavanja → Ovaj uređaj shows how to add admin to the home screen (Android: **Instaliraj aplikaciju**; iPhone: Safari → Share → **Add to Home Screen**). It then opens full screen with its own icon. On iPhone, log in once inside the app with **Zapamti ovaj uređaj**, because it keeps its own storage separate from Safari.
 
-## Offline alert (optional, about 10 minutes, once)
+## Offline alert (paused, kept for later)
+
+> Not active at the moment: the alert card is hidden in admin (`ALERTS_ENABLED = false` in `public/admin/index.html`). The code below stays in the repo. To turn it on, set `ALERTS_ENABLED = true`, then do the setup steps.
+
 
 A small separate Cloudflare Worker checks every 10 minutes whether the screen is still reporting, and sends a notification to your phone through the free **ntfy** app if it has been silent longer than the time set in admin (Ekran → Obavještenje na telefon), and again when it is back. Admin also shows the steps below with your topic name filled in.
 
