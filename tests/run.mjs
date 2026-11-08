@@ -166,6 +166,13 @@ await atest("at most 5 screens are kept, and silent ones are forgotten after a w
   await recordPing(env, report("screenlate"), T0 + 8 * 24 * 3600e3);
   eq(Object.keys((await readScreens(env)).screens), ["screenlate"]);
 });
+await atest("the device description is kept (and trimmed)", async () => {
+  const env = fakeEnv();
+  await recordPing(env, report("screen0001", {device:"Android TV · Chrome"}), T0);
+  await recordPing(env, report("screen0002", {device:"x".repeat(100)}), T0 + MIN_WRITE_GAP_MS);
+  const s = (await readScreens(env)).screens;
+  eq([s.screen0001.device, s.screen0002.device.length], ["Android TV · Chrome", 40]);
+});
 await atest("bad ids and oversized fields are rejected or trimmed", async () => {
   const env = fakeEnv();
   eq([await recordPing(env, {id:"../x"}, T0), await recordPing(env, {}, T0), await recordPing(env, null, T0)], [false, false, false]);
@@ -255,9 +262,9 @@ await atest("admin can see that the alert worker is connected", async () => {
   const r = await screensApi.onRequestGet({ request: new Request("https://x/api/screens", { headers: { "x-admin-pin": "1234" } }), env });
   eq((await r.json()).alertsSince, started.startedAt);
 });
-test("new settings have alerts on (30 min, no night pause) and an empty archive", () => {
+test("new settings have alerts on (30 min, no night pause), an empty archive and no marked screens", () => {
   const c = S.normalize({});
-  eq([c.alerts, c.archive], [{ on: true, afterMin: 30, quietFrom: "", quietTo: "" }, []]);
+  eq([c.alerts, c.archive, c.screenLabels], [{ on: true, afterMin: 30, quietFrom: "", quietTo: "" }, [], {}]);
 });
 
 console.log(`${passed} passed, ${failed} failed`);

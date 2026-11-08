@@ -226,6 +226,13 @@ input[type=date].inp{display:block}
 .scr-item.off .st{color:var(--warn)}
 .scr-item ul{grid-column:2;margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:14px;color:var(--ink-2)}
 .scr-item li.warn{color:var(--warn)}
+.scr-head{display:flex;align-items:center;gap:10px;min-width:0}
+.scr-name{flex:1;min-width:0;font-weight:700;font-size:16px;min-height:40px;padding:6px 10px}
+.scr-item.other{background:var(--bg)}
+.linkbtn{border:0;background:none;padding:6px 0;color:var(--ink-2);text-decoration:underline;cursor:pointer;font-size:13px}
+.others > summary{cursor:pointer;font-weight:700;font-size:15px;padding:8px 0;min-height:36px}
+.others .sum-note{font-weight:400;font-size:13px;color:var(--ink-2)}
+.others .scr-list{margin-top:6px}
 .pv-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .pv-head .seg-group{flex:0 0 auto;min-width:240px}
 .pv-frame{position:relative;margin:0 auto;border-radius:12px;overflow:hidden;background:#0F1C33;border:1px solid var(--line)}
@@ -865,7 +872,7 @@ async function loadScreens(){
     const r = await fetch("/api/screens", {headers:{"x-admin-pin":pin}, cache:"no-store"});
     if (!r.ok) return;
     const d = await r.json();
-    screens = Object.values(d.screens || {}).sort((a, b) => Date.parse(a.first) - Date.parse(b.first));
+    screens = Object.entries(d.screens || {}).map(([id, x]) => ({...x, id})).sort((a, b) => Date.parse(a.first) - Date.parse(b.first));
     alertsSince = d.alertsSince || "";
     screensAt = Date.now() - Date.parse(d.now); // server clock vs this device
   }catch(e){ return; }
@@ -880,37 +887,77 @@ function ago(iso){
   if (m < 6*60) return `prije ${Math.floor(m/60)} h ${m%60 ? (m%60) + " min" : ""}`.trim();
   return dateKey(d) === dateKey(new Date()) ? `danas u ${pad(d.getHours())}:${pad(d.getMinutes())}` : `${d.getDate()}.${d.getMonth()+1}. u ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+const OTHER_HIDE_MS = 24 * 3600e3; // unmarked devices drop off the list after a day of silence
+let othersOpen = false;
+const labels = () => (draft || config).screenLabels || {};
+// which devices count: the ones marked as screens; until one is marked, every device that
+// reported in the last day (the first setup case)
+function screenGroups(){
+  const L = labels(), marked = screens.filter(x => L[x.id] !== undefined);
+  const recent = x => nowServer() - Date.parse(x.at) < OTHER_HIDE_MS;
+  const others = screens.filter(x => L[x.id] === undefined && recent(x));
+  return marked.length ? {main:marked, others, marked:true} : {main:others, others:[], marked:false};
+}
 function renderScreens(){
   const pill = $("scrPill"), list = $("scrList");
   if (screens === null){ pill.hidden = true; return; }
-  const online = screens.filter(x => nowServer() - Date.parse(x.at) < ONLINE_MS);
+  const {main, others, marked} = screenGroups();
+  const isOn = x => nowServer() - Date.parse(x.at) < ONLINE_MS;
+  const online = main.filter(isOn);
   pill.hidden = false;
-  pill.className = "scr-pill " + (online.length ? "on" : screens.length ? "off" : "");
-  $("scrPillText").textContent = online.length ? (screens.length > 1 ? `Ekrani uživo: ${online.length}/${screens.length}` : "Ekran uživo") : screens.length ? "Ekran van mreže" : "Ekran nije javljen";
+  pill.className = "scr-pill " + (online.length ? "on" : main.length ? "off" : "");
+  $("scrPillText").textContent = online.length ? (main.length > 1 ? `Ekrani uživo: ${online.length}/${main.length}` : "Ekran uživo") : main.length ? "Ekran van mreže" : "Ekran nije javljen";
   pill.title = "Stanje ekrana u džamiji";
   const conn = $("alertConn");
   if (conn && alertsSince !== null){
     conn.className = "tag" + (alertsSince ? " live" : "");
     conn.textContent = alertsSince ? `Povezano od ${ago(alertsSince)}` : "Još nije povezano";
   }
-  if (!list) return;
-  if (!screens.length){
+  if (!list || list.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return; // don't redraw while typing a name
+  if (!main.length && !others.length){
     list.replaceChildren(el("p",{class:"empty",text:"Nijedan ekran se još nije javio. Ekran se javlja svakih 5 minuta nakon što učita najnoviju verziju prikaza (svake noći oko 03:30, ili odmah ako osvježite stranicu na TV-u)."}));
     return;
   }
-  list.replaceChildren(...screens.map((x, i) => {
-    const on = nowServer() - Date.parse(x.at) < ONLINE_MS, latest = x.version && x.version === config.updatedAt;
+  const setLabel = (id, name) => {
+    draft.screenLabels = {...(draft.screenLabels || {})};
+    if (name === null) delete draft.screenLabels[id]; else draft.screenLabels[id] = name;
+    setDirty(true); renderScreens();
+  };
+  const detail = (x, withName) => [withName ? (x.device || "Nepoznat uređaj") : "", x.w && x.h ? `${x.w}×${x.h}` : "", x.layout].filter(Boolean).join(" · ");
+  const item = (x, i, kind) => {
+    const on = isOn(x), latest = x.version && x.version === config.updatedAt, L = labels();
     const items = [
-      el("li",{text:`Zadnji put se javio ${ago(x.at)}`}),
-      el("li",{class: latest || !on ? "" : "warn", text: latest ? (on ? "Prikazuje zadnje sačuvane postavke" : "Imao je zadnje sačuvane postavke") : on ? "Još prikazuje starije postavke; nove preuzima u roku od par minuta" : "Prikazivao je postavke sačuvane prije zadnje izmjene"}),
-      el("li",{text:[x.layout, x.w && x.h ? `${x.w}×${x.h}` : "", x.since ? `učitan ${ago(x.since)}` : ""].filter(Boolean).join(" · ")})
+      el("li",{text:detail(x, kind === "marked")}),
+      el("li",{text:`Zadnji put se javio ${ago(x.at)}` + (x.since ? ` · učitan ${ago(x.since)}` : "")})
     ];
-    if (!on) items.push(el("li",{class:"warn",text:"Provjerite da li su TV i internet u džamiji uključeni."}));
-    return el("div",{class:"scr-item " + (on ? "on" : "off")},
-      el("span",{class:"scr-dot"}),
-      el("div",{}, el("b",{text: screens.length > 1 ? `Ekran ${i+1}` : "Ekran u džamiji"}), " ", el("span",{class:"st",text: on ? "· uživo" : "· van mreže"})),
-      el("ul",{}, ...items));
-  }));
+    if (kind !== "other") items.push(el("li",{class: latest || !on ? "" : "warn", text: latest ? (on ? "Prikazuje zadnje sačuvane postavke" : "Imao je zadnje sačuvane postavke") : on ? "Još prikazuje starije postavke; nove preuzima u roku od par minuta" : "Prikazivao je postavke sačuvane prije zadnje izmjene"}));
+    if (kind === "marked" && !on) items.push(el("li",{class:"warn",text:"Provjerite da li su TV i internet u džamiji uključeni."}));
+    let head;
+    if (kind === "marked"){
+      const name = el("input",{type:"text",class:"inp scr-name",maxlength:"40","aria-label":"Naziv ekrana",placeholder:"Naziv ekrana"});
+      name.value = L[x.id] || "";
+      name.addEventListener("input", () => { draft.screenLabels = {...draft.screenLabels, [x.id]: name.value}; setDirty(true); });
+      name.addEventListener("blur", () => renderScreens());
+      head = el("div",{class:"scr-head"}, name, el("span",{class:"st",text: on ? "uživo" : "van mreže"}));
+      items.push(el("li",{}, el("button",{class:"linkbtn",type:"button",text:"Ovo nije ekran u džamiji",onclick:()=>setLabel(x.id, null)})));
+    } else {
+      head = el("div",{}, el("b",{text: x.device || (main.length > 1 && kind !== "other" ? `Uređaj ${i+1}` : "Nepoznat uređaj")}), " ", el("span",{class:"st",text: on ? "· uživo" : "· van mreže"}));
+      const n = Object.keys(L).length;
+      items.push(el("li",{}, el("button",{class:"btn small primary",type:"button",text:"Ovo je ekran u džamiji",onclick:()=>setLabel(x.id, n ? `Ekran ${n+1}` : "Ekran u džamiji")})));
+    }
+    return el("div",{class:"scr-item " + (on ? "on" : "off") + (kind === "other" ? " other" : "")},
+      el("span",{class:"scr-dot"}), head, el("ul",{}, ...items));
+  };
+  const out = [];
+  if (!marked) out.push(el("p",{class:"hint",style:"margin:0",text:"Označite koji uređaj je ekran u džamiji. Tada se prate samo označeni ekrani, a telefoni i računari na kojima ste otvarali prikaz prelaze u „Drugi uređaji” i nestaju nakon jednog dana."}));
+  out.push(...main.map((x, i) => item(x, i, marked ? "marked" : "candidate")));
+  if (others.length){
+    const d = el("details",{class:"others"}, el("summary",{}, `Drugi uređaji (${others.length})`, el("span",{class:"sum-note",text:" · nestaju nakon jednog dana bez javljanja"})),
+      el("div",{class:"scr-list"}, ...others.map((x, i) => item(x, i, "other"))));
+    d.open = othersOpen; d.addEventListener("toggle", () => { othersOpen = d.open; });
+    out.push(d);
+  }
+  list.replaceChildren(...out);
 }
 // the admin page polls the status once a minute while it is open and visible
 function startScreens(){ clearInterval(screensTimer); loadScreens(); screensTimer = setInterval(() => { if (!document.hidden) loadScreens(); else renderScreens(); }, 60000); }
@@ -969,7 +1016,7 @@ function buildEkranTab(){
     el("div",{class:"tab-head"}, el("h2",{text:"Ekran"}), el("p",{text:"Da li je ekran u džamiji uključen i kako izgleda prikaz."})),
     el("div",{class:"card"},
       el("h3",{text:"Stanje"}),
-      el("p",{class:"hint",text:"Ekran se javlja svakih 5 minuta. Ako se ne javi duže od 12 minuta, prikazuje se kao van mreže."}),
+      el("p",{class:"hint",text:"Ekran se javlja svakih 5 minuta. Ako se ne javi duže od 12 minuta, prikazuje se kao van mreže. Uređaji na kojima je zapamćen PIN za admin se ne javljaju."}),
       el("div",{class:"scr-list",id:"scrList"})),
     el("div",{id:"alertsSlot"}),
     el("div",{class:"card"},
@@ -1008,7 +1055,7 @@ window.addEventListener("message", e => { if (e.origin === location.origin && e.
 const TABS = [
   ["danas", "Danas", ["offsets","overrides","jumuah"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'],
   ["obavijesti", "Obavijesti", ["notes","archive","announcement"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>'],
-  ["ekran", "Ekran", ["alerts"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>'],
+  ["ekran", "Ekran", ["alerts","screenLabels"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>'],
   ["podesavanja", "Podešavanja", ["masjidName","city","lat","lng","source","cityIndex","asrFactor","hijriAdjust","fajrAngle","ishaAngle","noteSeconds","showSeconds","night","colors"], '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>']
 ];
 const OLD_SECTIONS = {vremena:"danas", najava:"obavijesti", dzamija:"podesavanja", izvor:"podesavanja", nocni:"podesavanja", boje:"podesavanja"};
