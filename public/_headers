@@ -1,6 +1,5 @@
 /admin/*
   X-Robots-Tag: noindex
-  Cache-Control: no-cache
 
 /sw.js
   Cache-Control: no-cache
