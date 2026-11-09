@@ -267,5 +267,26 @@ test("new settings have alerts on (30 min, no night pause), an empty archive and
   eq([c.alerts, c.archive, c.screenLabels], [{ on: true, afterMin: 30, quietFrom: "", quietTo: "" }, [], {}]);
 });
 
+/* ---------- settings check (ETag / 304) ---------- */
+const settingsApi = await import("../functions/api/settings.js");
+await atest("settings: unchanged settings answer 304 with no body, changed ones 200", async () => {
+  const env = fakeEnv();
+  await env.VAKTIJA.put("settings", JSON.stringify({masjidName:"A", updatedAt:"v1"}));
+  const get = (tag) => settingsApi.onRequestGet({ request: new Request("https://x/api/settings", { headers: tag ? { "if-none-match": tag } : {} }), env });
+  const r1 = await get(); const tag = r1.headers.get("etag");
+  eq([r1.status, (await r1.json()).masjidName, /^"[0-9a-f]{24}"$/.test(tag)], [200, "A", true]);
+  const r2 = await get(tag);
+  eq([r2.status, await r2.text(), r2.headers.get("etag")], [304, "", tag]);
+  eq((await get("W/" + tag)).status, 304);           // weak form from Cloudflare compression
+  eq((await get('"something-else"')).status, 200);
+  await env.VAKTIJA.put("settings", JSON.stringify({masjidName:"B", updatedAt:"v2"}));
+  const r3 = await get(tag);
+  eq([r3.status, (await r3.json()).masjidName, r3.headers.get("etag") !== tag], [200, "B", true]);
+});
+await atest("settings: empty storage still answers with a tag", async () => {
+  const r = await settingsApi.onRequestGet({ request: new Request("https://x/api/settings"), env: fakeEnv() });
+  eq([r.status, await r.text(), !!r.headers.get("etag")], [200, "{}", true]);
+});
+
 console.log(`${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

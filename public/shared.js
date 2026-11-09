@@ -210,9 +210,13 @@ function applyPalette(el, colors){
 }
 
 /* settings API */
-async function fetchSettings(){
-  const r = await fetch("/api/settings", {cache:"no-store"});
+// With the fingerprint (ETag) of the settings already held, returns null when nothing has
+// changed (the server answers 304 with no body). The new fingerprint is in fetchSettings.tag.
+async function fetchSettings(knownTag){
+  const r = await fetch("/api/settings", {cache:"no-store", headers: knownTag ? {"if-none-match":knownTag} : {}});
+  if (r.status === 304) return null;
   if (!r.ok) throw new Error("settings " + r.status);
+  fetchSettings.tag = r.headers.get("etag") || "";
   const raw = await r.json(), c = normalize(raw);
   c.updatedAt = (raw && raw.updatedAt) || ""; // version, used by admin to detect saves from elsewhere
   return c;

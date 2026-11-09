@@ -1,4 +1,5 @@
-// GET  /api/settings  -> current board settings (public; the TV reads this)
+// GET  /api/settings  -> current board settings (public; the TV reads this). Sends an ETag;
+//                        with a matching If-None-Match header the answer is 304 (unchanged).
 // PUT  /api/settings  -> replace settings (requires header x-admin-pin). With header
 //                        x-base-version (the updatedAt the editor started from), the save is
 //                        refused with 409 if someone else has saved since.
@@ -12,11 +13,21 @@ async function currentVersion(env) {
   try { return JSON.parse((await env.VAKTIJA.get(KEY)) || "{}").updatedAt || ""; } catch { return ""; }
 }
 
-export async function onRequestGet({ env }) {
-  const value = await env.VAKTIJA.get(KEY);
-  return new Response(value || "{}", {
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
-  });
+// A fingerprint of the stored settings. The TV sends it back on its next check (every 30 s)
+// and gets an empty "304 not modified" answer while nothing has changed, instead of the full settings.
+async function tagOf(text) {
+  const hash = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(text));
+  return '"' + [...new Uint8Array(hash)].slice(0, 12).map(b => b.toString(16).padStart(2, "0")).join("") + '"';
+}
+const bareTag = t => (t || "").trim().replace(/^W\//, ""); // Cloudflare may mark tags as weak (W/"...") when compressing
+
+export async function onRequestGet({ request, env }) {
+  const value = (await env.VAKTIJA.get(KEY)) || "{}";
+  const etag = await tagOf(value);
+  const headers = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", etag };
+  const asked = request.headers.get("if-none-match");
+  if (asked && asked.split(",").some(t => bareTag(t) === etag)) return new Response(null, { status: 304, headers });
+  return new Response(value, { headers });
 }
 
 export async function onRequestPut({ request, env }) {
